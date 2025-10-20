@@ -21,10 +21,10 @@
 
 ## Phase 2 — Minimal Router & Views Skeleton
 
-- [ ] Create `public/index.php` with simple router (`/login`, `/queue`, `/settings`, `/tv`)
-- [ ] Create layout includes: `views/_layout_header.php`, `views/_layout_footer.php`
-- [ ] Stub views: `views/login.php`, `views/queue.php`, `views/settings.php`, `views/tv.php`
-- [ ] Add base CSS (`assets/css/base.css`, `assets/css/tv.css`) and empty JS (`assets/js/app.js`, `assets/js/tv.js`, `assets/js/auth.js`)
+- [x] Create `public/index.php` with simple router (`/login`, `/queue`, `/settings`, `/tv`)
+- [x] Create layout includes: `views/_layout_header.php`, `views/_layout_footer.php`
+- [x] Stub views: `views/login.php`, `views/queue.php`, `views/settings.php`, `views/tv.php`
+- [x] Add base CSS (`assets/css/base.css`, `assets/css/tv.css`) and empty JS (`assets/js/app.js`, `assets/js/tv.js`, `assets/js/auth.js`)
 
 ## Phase 3 — OAuth (Google & Apple)
 
