@@ -1,0 +1,7 @@
+# Barber Turns ignore rules
+includes/config.php
+/secrets/
+/vendor/
+/node_modules/
+.DS_Store
+Thumbs.db
