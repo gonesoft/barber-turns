@@ -12,12 +12,12 @@
 
 ## Phase 1 — Config & DB Wiring
 
-- [ ] Add `includes/config.sample.php` and copy to `includes/config.php`
-- [ ] Implement `includes/db.php` (PDO factory)
-- [ ] Implement `includes/session.php` (secure session init)
-- [ ] Implement `includes/auth.php` (`require_login`, `require_owner`, `current_user`)
-- [ ] Implement `includes/security.php` (CSRF helpers, sanitize helpers)
-- [ ] Seed `settings` row (id=1) and optional demo barbers
+- [x] Add `includes/config.sample.php` and copy to `includes/config.php`
+- [x] Implement `includes/db.php` (PDO factory)
+- [x] Implement `includes/session.php` (secure session init)
+- [x] Implement `includes/auth.php` (`require_login`, `require_owner`, `current_user`)
+- [x] Implement `includes/security.php` (CSRF helpers, sanitize helpers)
+- [x] Seed `settings` row (id=1) and optional demo barbers
 
 ## Phase 2 — Minimal Router & Views Skeleton
 
