@@ -26,6 +26,9 @@ switch ($route) {
     case '/tv':
         $view = 'tv';
         break;
+    case '/logout':
+        require_once __DIR__ . '/../auth/logout.php';
+        exit;
     default:
         http_response_code(404);
         $view = '404';

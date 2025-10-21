@@ -28,12 +28,12 @@
 
 ## Phase 3 — OAuth (Google & Apple)
 
-- [ ] `auth/google_start.php` (redirect to Google OAuth)
-- [ ] `auth/google_callback.php` (exchange code → tokens → profile; upsert user; start session)
-- [ ] `auth/apple_start.php` (auth request with proper scopes)
-- [ ] `auth/apple_callback.php` (verify id_token; upsert user; start session)
-- [ ] `auth/logout.php` (destroy session)
-- [ ] Protect routes: `/queue` and `/settings` require login; `/settings` requires owner role
+- [x] `auth/google_start.php` (redirect to Google OAuth)
+- [x] `auth/google_callback.php` (exchange code → tokens → profile; upsert user; start session)
+- [x] `auth/apple_start.php` (auth request with proper scopes)
+- [x] `auth/apple_callback.php` (verify id_token; upsert user; start session)
+- [x] `auth/logout.php` (destroy session)
+- [x] Protect routes: `/queue` and `/settings` require login; `/settings` requires owner role
 
 ## Phase 4 — Models & Queue Logic
 
