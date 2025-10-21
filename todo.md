@@ -38,10 +38,10 @@
 
 ## Phase 4 — Models & Queue Logic
 
-- [ ] `includes/barber_model.php` (CRUD, list ordered by `position`, reorder)
-- [ ] `includes/settings_model.php` (get/set title, logo, theme, tv_token)
-- [ ] `includes/queue_logic.php` implementing transitions: - available → busy_walkin: move to bottom, `timer_start=NOW()` - busy_walkin → busy_appointment: keep position, restart timer - busy_appointment → available: keep position, clear timer
-- [ ] Normalize positions after any change (1..N)
+- [x] `includes/barber_model.php` (CRUD, list ordered by `position`, reorder)
+- [x] `includes/settings_model.php` (get/set title, logo, theme, tv_token)
+- [x] `includes/queue_logic.php` implementing transitions: - available → busy_walkin: move to bottom, `timer_start=NOW()` - busy_walkin → busy_appointment: keep position, restart timer - busy_appointment → available: keep position, clear timer
+- [x] Normalize positions after any change (1..N)
 
 ## Phase 5 — API Endpoints
 
@@ -256,16 +256,16 @@ Header set X-Robots-Tag "noindex, nofollow"
 
 ## Phase 4 — Models & Queue Logic
 
-- [ ] `includes/barber_model.php` (CRUD, list ordered by `position`, reorder)
-- [ ] `includes/settings_model.php` (get/set title, logo, theme, tv_token)
-- [ ] `includes/queue_logic.php` implementing transitions: - available → busy_walkin: move to bottom, `timer_start=NOW()` - busy_walkin → busy_appointment: keep position, restart timer - busy_appointment → available: keep position, clear timer
-- [ ] Normalize positions after any change (1..N)
+- [x] `includes/barber_model.php` (CRUD, list ordered by `position`, reorder)
+- [x] `includes/settings_model.php` (get/set title, logo, theme, tv_token)
+- [x] `includes/queue_logic.php` implementing transitions: - available → busy_walkin: move to bottom, `timer_start=NOW()` - busy_walkin → busy_appointment: keep position, restart timer - busy_appointment → available: keep position, clear timer
+- [x] Normalize positions after any change (1..N)
 
 **Files to create**
 
 - `includes/barber_model.php`, `includes/settings_model.php`, `includes/queue_logic.php`
 
-- [ ] Update \`users\` schema: add \`email\` and extend \`role\` enum to ('viewer','frontdesk','owner'); default 'viewer'.
+- [x] Update \`users\` schema: add \`email\` and extend \`role\` enum to ('viewer','frontdesk','owner'); default 'viewer'.
 
 **Definition of Done (Phase 4)**
 
