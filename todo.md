@@ -71,10 +71,10 @@
 
 ## Phase 8 — Settings (Owner/Admin)
 
-- [ ] Form to edit title, theme (light/dark), optional logo URL
-- [ ] Barber management: add/edit/remove; persist `position` on save
-- [ ] Button: Regenerate TV token (writes to DB and shows new URL)
-- [ ] CSRF protect all POST forms
+- [x] Form to edit title, theme (light/dark), optional logo URL
+- [x] Barber management: add/edit/remove; persist `position` on save
+- [x] Button: Regenerate TV token (writes to DB and shows new URL)
+- [x] CSRF protect all POST forms
 
 ## Phase 9 — Security & Hardening
 
@@ -386,7 +386,7 @@ curl -i -s -X POST https://yourdomain.com/api/barbers.php?action=status \
 - [x] `views/tv.php` accepts `?token=...`; validate against settings
 - [x] Large typography, no interaction; status colors only
 - [x] `assets/js/tv.js` polls list every `ui.poll_ms` ms and re-renders
-- [ ] Admin button to generate/rotate TV token in settings
+- [x] Admin button to generate/rotate TV token in settings
 
 **TV Token Flow**
 
@@ -404,10 +404,10 @@ curl -i -s -X POST https://yourdomain.com/api/barbers.php?action=status \
 
 ## Phase 8 — Settings (Owner/Admin)
 
-- [ ] Form to edit title, theme (light/dark), optional logo URL
-- [ ] Barber management: add/edit/remove; persist `position` on save
-- [ ] Button: Regenerate TV token (writes to DB and shows new URL)
-- [ ] CSRF protect all POST forms
+- [x] Form to edit title, theme (light/dark), optional logo URL
+- [x] Barber management: add/edit/remove; persist `position` on save
+- [x] Button: Regenerate TV token (writes to DB and shows new URL)
+- [x] CSRF protect all POST forms
 
 **Files touched**
 
@@ -415,14 +415,14 @@ curl -i -s -X POST https://yourdomain.com/api/barbers.php?action=status \
 
 ### Users (Owner only)
 
-- [ ] List users (name, email, provider, role).
-- [ ] Owner can change a user's role (viewer/frontdesk/owner).
-- [ ] Add \`/api/users.php\` endpoints: \`list\` (GET, owner), \`set_role\` (POST, owner).
+- [x] List users (name, email, provider, role).
+- [x] Owner can change a user's role (viewer/frontdesk/owner).
+- [x] Add \`/api/users.php\` endpoints: \`list\` (GET, owner), \`set_role\` (POST, owner).
 
 **Definition of Done (Phase 8)**
 
-- [ ] Saving settings persists and reflects in header/theme
-- [ ] Regenerating token updates DB and invalidates old TV URL
+- [x] Saving settings persists and reflects in header/theme
+- [x] Regenerating token updates DB and invalidates old TV URL
 
 ---
 

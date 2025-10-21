@@ -75,6 +75,178 @@ section[class^="view-"] h2 {
     cursor: not-allowed;
 }
 
+.btn-primary {
+    background: #1d74f5;
+    border-color: #1d74f5;
+}
+
+.btn-secondary {
+    background: #ffffff;
+    color: #1d74f5;
+    border-color: #1d74f5;
+}
+
+.btn-secondary:hover {
+    background: #f0f6ff;
+}
+
+.btn-warning {
+    background: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.btn-warning:hover {
+    background: #d97706;
+    border-color: #d97706;
+}
+
+.view-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.settings-header h2 {
+    margin: 0;
+}
+
+.settings-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+.settings-card h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+.settings-form {
+    display: grid;
+    gap: 1rem;
+    max-width: 520px;
+}
+
+.form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #333;
+}
+
+.form-field input,
+.form-field select,
+.settings-table input,
+.settings-table select {
+    padding: 0.5rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+    font-size: 1rem;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.settings-table input:focus,
+.settings-table select:focus {
+    outline: 2px solid #1d74f5;
+    outline-offset: 1px;
+}
+
+.form-hint {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.form-actions {
+    margin-top: 0.5rem;
+}
+
+.settings-alert {
+    padding: 1rem 1.25rem;
+    border-radius: 10px;
+}
+
+.settings-alert--success {
+    background: #def7ec;
+    color: #03543f;
+    border-left: 5px solid #0e9f6e;
+}
+
+.settings-alert--error {
+    background: #fde8e8;
+    color: #9b1c1c;
+    border-left: 5px solid #f05252;
+}
+
+.settings-alert ul {
+    margin: 0;
+    padding-left: 1.1rem;
+}
+
+.settings-card .inline-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.inline-form select {
+    padding: 0.4rem 0.5rem;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+}
+
+.settings-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.settings-table th,
+.settings-table td {
+    padding: 0.75rem 0.65rem;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.settings-table thead th {
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    color: #475569;
+    letter-spacing: 0.05em;
+}
+
+.settings-table__empty {
+    text-align: center;
+    color: #64748b;
+    font-style: italic;
+}
+
+.settings-table__delete {
+    text-align: center;
+}
+
+.tv-link {
+    display: inline-block;
+    background: #0f172a;
+    color: #f1f5f9;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    margin-top: 0.5rem;
+    word-break: break-all;
+}
+
+.settings-text {
+    margin: 0 0 0.75rem;
+    color: #475569;
+}
+
 .queue-controls {
     margin-top: 1.5rem;
     display: flex;
