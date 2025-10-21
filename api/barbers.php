@@ -56,9 +56,23 @@ try {
  */
 function handle_list(): void
 {
-    $user = api_require_user();
+    $token = $_GET['token'] ?? '';
+    $settings = null;
+    $user = null;
+
+    if ($token !== '') {
+        $settings = settings_find_by_tv_token($token);
+        if ($settings === null) {
+            http_response_code(403);
+            echo json_encode(['error' => 'forbidden', 'reason' => 'invalid_tv_token']);
+            return;
+        }
+    } else {
+        $user = api_require_user();
+        $settings = settings_get();
+    }
+
     $barbers = barber_list();
-    $settings = settings_get();
 
     $barbers = array_map(static function (array $barber): array {
         $barber['position'] = (int)$barber['position'];
@@ -74,8 +88,13 @@ function handle_list(): void
     echo json_encode([
         'data' => $barbers,
         'user' => $user,
+        'access' => $token !== '' ? 'token' : 'session',
         'server_time' => date(DATE_ATOM),
         'poll_interval_ms' => (int)($settings['poll_interval_ms'] ?? 3000),
+        'settings' => [
+            'shop_name' => $settings['shop_name'] ?? 'Barber Turns',
+            'theme' => $settings['theme'] ?? 'light',
+        ],
     ]);
 }
 

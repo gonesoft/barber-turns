@@ -29,6 +29,21 @@ function settings_get(?PDO $pdo = null): array
 }
 
 /**
+ * Get settings by TV token (used for public TV endpoint).
+ *
+ * @return array<string,mixed>|null
+ */
+function settings_find_by_tv_token(string $token, ?PDO $pdo = null): ?array
+{
+    $pdo ??= bt_db();
+    $stmt = $pdo->prepare('SELECT * FROM settings WHERE tv_token = :token LIMIT 1');
+    $stmt->execute([':token' => $token]);
+    $settings = $stmt->fetch();
+
+    return $settings ?: null;
+}
+
+/**
  * Update settings (owner only). Returns updated row.
  *
  * @param array<string,mixed> $payload

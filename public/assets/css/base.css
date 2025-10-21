@@ -7,6 +7,20 @@ body {
     color: #222;
 }
 
+body.layout-tv {
+    background: #050505;
+    color: #f5f5f5;
+}
+
+body.layout-tv .site-header,
+body.layout-tv .site-footer {
+    display: none;
+}
+
+body.layout-tv .site-main {
+    padding: 0;
+}
+
 .site-header,
 .site-footer {
     padding: 1rem;

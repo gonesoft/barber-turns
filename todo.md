@@ -381,11 +381,11 @@ curl -i -s -X POST https://yourdomain.com/api/barbers.php?action=status \
 
 ---
 
-## Phase 7 — TV Mode (Read‑Only)
+## Phase 7 — TV Mode (Read-Only)
 
-- [ ] `views/tv.php` accepts `?token=...`; validate against settings
-- [ ] Large typography, no interaction; status colors only
-- [ ] `assets/js/tv.js` polls list every `ui.poll_ms` ms and re-renders
+- [x] `views/tv.php` accepts `?token=...`; validate against settings
+- [x] Large typography, no interaction; status colors only
+- [x] `assets/js/tv.js` polls list every `ui.poll_ms` ms and re-renders
 - [ ] Admin button to generate/rotate TV token in settings
 
 **TV Token Flow**
@@ -397,8 +397,8 @@ curl -i -s -X POST https://yourdomain.com/api/barbers.php?action=status \
 
 **Definition of Done (Phase 7)**
 
-- [ ] TV view renders without session when a valid token is provided
-- [ ] Queue updates visible within one poll cycle
+- [x] TV view renders without session when a valid token is provided
+- [x] Queue updates visible within one poll cycle
 
 ---
 
