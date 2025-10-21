@@ -45,13 +45,13 @@
 
 ## Phase 5 — API Endpoints
 
-- [ ] `/api/barbers.php?action=list` (GET): return ordered list + `server_time`
-- [ ] `/api/barbers.php?action=status` (POST): apply transition rules
-- [ ] `/api/barbers.php?action=order` (POST): manual reorder (array of IDs)
-- [ ] `/api/settings.php?action=get` (GET): return title/logo/theme
-- [ ] `/api/settings.php?action=save` (POST, owner): update settings
-- [ ] `/api/settings.php?action=regenerate_tv_token` (POST, owner): rotate token
-- [ ] Add `api/auth_check.php` to validate session/role or `tv_token` for read-only endpoints
+- [x] `/api/barbers.php?action=list` (GET): return ordered list + `server_time`
+- [x] `/api/barbers.php?action=status` (POST): apply transition rules
+- [x] `/api/barbers.php?action=order` (POST): manual reorder (array of IDs)
+- [x] `/api/settings.php?action=get` (GET): return title/logo/theme
+- [x] `/api/settings.php?action=save` (POST, owner): update settings
+- [x] `/api/settings.php?action=regenerate_tv_token` (POST, owner): rotate token
+- [x] Add `api/auth_check.php` to validate session/role or `tv_token` for read-only endpoints
 
 ## Phase 6 — Interactive Queue UI (Front-Desk)
 
