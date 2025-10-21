@@ -7,10 +7,14 @@
 
 declare(strict_types=1);
 
+use DateTime;
+use DateTimeInterface;
+use DateTimeZone;
 require_once __DIR__ . '/auth_check.php';
 require_once __DIR__ . '/../includes/security.php';
 require_once __DIR__ . '/../includes/barber_model.php';
 require_once __DIR__ . '/../includes/queue_logic.php';
+require_once __DIR__ . '/../includes/settings_model.php';
 
 header('Content-Type: application/json');
 
@@ -54,11 +58,24 @@ function handle_list(): void
 {
     $user = api_require_user();
     $barbers = barber_list();
+    $settings = settings_get();
+
+    $barbers = array_map(static function (array $barber): array {
+        $barber['position'] = (int)$barber['position'];
+        $barber['id'] = (int)$barber['id'];
+        if (isset($barber['busy_since']) && $barber['busy_since'] !== null) {
+            $dt = new DateTime($barber['busy_since'], new DateTimeZone(date_default_timezone_get()));
+            $barber['busy_since'] = $dt->format(DateTimeInterface::ATOM);
+        }
+
+        return $barber;
+    }, $barbers);
 
     echo json_encode([
         'data' => $barbers,
         'user' => $user,
         'server_time' => date(DATE_ATOM),
+        'poll_interval_ms' => (int)($settings['poll_interval_ms'] ?? 3000),
     ]);
 }
 

@@ -66,3 +66,147 @@ section[class^="view-"] h2 {
     display: flex;
     gap: 1rem;
 }
+
+.queue-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.queue-note {
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: #fff3cd;
+    border-left: 4px solid #f0ad4e;
+    border-radius: 6px;
+    color: #7a5a0c;
+}
+
+.queue-alert {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    background: #f8d7da;
+    color: #842029;
+}
+
+.queue-grid {
+    margin-top: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.queue-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #555;
+}
+
+.view-queue.is-viewer .barber-card {
+    cursor: default;
+}
+
+.barber-card {
+    position: relative;
+    background: #fff;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border-left: 6px solid transparent;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.barber-card:focus-visible {
+    outline: 3px solid #0072ff;
+    outline-offset: 2px;
+}
+
+.barber-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+}
+
+.barber-card.is-disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.barber-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.barber-name {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.status-chip {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-available {
+    background: #e1f8e9;
+    color: #0b6b34;
+}
+
+.status-busy_walkin {
+    background: #ffe1e1;
+    color: #aa1d1d;
+}
+
+.status-busy_appointment {
+    background: #ffedd8;
+    color: #9c5a00;
+}
+
+.status-inactive {
+    background: #e5e5e5;
+    color: #555;
+}
+
+.barber-card__meta {
+    margin-top: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.85rem;
+    color: #4d4d4d;
+}
+
+.barber-position {
+    font-weight: 500;
+}
+
+.barber-timer {
+    font-family: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+    font-size: 0.95rem;
+}
+
+.barber-card[data-status="available"] {
+    border-left-color: #0b6b34;
+}
+
+.barber-card[data-status="busy_walkin"] {
+    border-left-color: #aa1d1d;
+}
+
+.barber-card[data-status="busy_appointment"] {
+    border-left-color: #9c5a00;
+}
+
+.barber-card[data-status="inactive"] {
+    border-left-color: #777;
+    opacity: 0.6;
+}

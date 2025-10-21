@@ -362,12 +362,12 @@ curl -i -s -X POST https://yourdomain.com/api/barbers.php?action=status \
 
 ## Phase 6 — Interactive Queue UI (Front-Desk)
 
-- [ ] Render barber cards with name + status chip + small timer placeholder
-- [ ] Click behavior cycles statuses: Available → Busy‑Walk‑In → Busy‑Appointment → Available
-- [ ] On click, POST to `/api/barbers.php?action=status` then refresh list
-- [ ] Poll `/api/barbers.php?action=list` every `ui.poll_ms` ms; diff-update DOM (avoid flicker)
-- [ ] Color coding: green (available), red (busy-walk-in), orange (busy-appointment), gray (inactive)
-- [ ] Client timer: compute elapsed using `busy_since` & `server_time`
+- [x] Render barber cards with name + status chip + small timer placeholder
+- [x] Click behavior cycles statuses: Available → Busy‑Walk‑In → Busy‑Appointment → Available
+- [x] On click, POST to `/api/barbers.php?action=status` then refresh list
+- [x] Poll `/api/barbers.php?action=list` every `ui.poll_ms` ms; diff-update DOM (avoid flicker)
+- [x] Color coding: green (available), red (busy-walk-in), orange (busy-appointment), gray (inactive)
+- [x] Client timer: compute elapsed using `busy_since` & `server_time`
 
 **Files touched**
 
@@ -375,9 +375,9 @@ curl -i -s -X POST https://yourdomain.com/api/barbers.php?action=status \
 
 **Definition of Done (Phase 6)**
 
-- [ ] Clicking a card updates status and the list reflects server order within 1 poll cycle
-- [ ] Timers show mm:ss and reset when back to Available
-- [ ] If current user is Viewer, disable click handlers and show 'View‑only' indicator.
+- [x] Clicking a card updates status and the list reflects server order within 1 poll cycle
+- [x] Timers show mm:ss and reset when back to Available
+- [x] If current user is Viewer, disable click handlers and show 'View‑only' indicator.
 
 ---
 
