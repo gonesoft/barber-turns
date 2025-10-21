@@ -74,36 +74,55 @@ if (isset($_POST['user'])) {
 $name = $fullName !== '' ? $fullName : $email;
 
 $pdo = bt_db();
-$pdo->beginTransaction();
 
-$role = 'staff';
-$existingOwnerCount = (int)$pdo->query("SELECT COUNT(*) FROM users WHERE role = 'owner'")->fetchColumn();
-if ($existingOwnerCount === 0) {
-    $role = 'owner';
+try {
+    $pdo->beginTransaction();
+
+    $selectStmt = $pdo->prepare("SELECT * FROM users WHERE oauth_provider = :provider AND oauth_id = :oauth_id LIMIT 1");
+    $selectStmt->execute([
+        ':provider' => 'apple',
+        ':oauth_id' => $providerId,
+    ]);
+
+    $user = $selectStmt->fetch();
+
+    if ($user) {
+        $updateStmt = $pdo->prepare(
+            "UPDATE users
+             SET email = :email, name = :name, updated_at = CURRENT_TIMESTAMP
+             WHERE id = :id"
+        );
+        $updateStmt->execute([
+            ':email' => $email,
+            ':name' => $name,
+            ':id' => $user['id'],
+        ]);
+        $userId = (int)$user['id'];
+    } else {
+        $insertStmt = $pdo->prepare(
+            "INSERT INTO users (oauth_provider, oauth_id, email, name, role)
+             VALUES (:provider, :oauth_id, :email, :name, 'viewer')"
+        );
+        $insertStmt->execute([
+            ':provider' => 'apple',
+            ':oauth_id' => $providerId,
+            ':email' => $email,
+            ':name' => $name,
+        ]);
+        $userId = (int)$pdo->lastInsertId();
+    }
+
+    $fetchStmt = $pdo->prepare("SELECT * FROM users WHERE id = :id LIMIT 1");
+    $fetchStmt->execute([':id' => $userId]);
+    $user = $fetchStmt->fetch();
+
+    $pdo->commit();
+} catch (Throwable $e) {
+    if ($pdo->inTransaction()) {
+        $pdo->rollBack();
+    }
+    exit('Login failed. Please try again later.');
 }
-
-$stmt = $pdo->prepare(
-    "INSERT INTO users (provider, provider_id, email, display_name, role)
-     VALUES (:provider, :provider_id, :email, :display_name, :role)
-     ON DUPLICATE KEY UPDATE email = VALUES(email), display_name = VALUES(display_name), updated_at = CURRENT_TIMESTAMP"
-);
-
-$stmt->execute([
-    ':provider' => 'apple',
-    ':provider_id' => $providerId,
-    ':email' => $email,
-    ':display_name' => $name,
-    ':role' => $role,
-]);
-
-$stmt = $pdo->prepare("SELECT * FROM users WHERE provider = :provider AND provider_id = :provider_id LIMIT 1");
-$stmt->execute([
-    ':provider' => 'apple',
-    ':provider_id' => $providerId,
-]);
-
-$user = $stmt->fetch();
-$pdo->commit();
 
 if (!$user) {
     exit('Unable to retrieve user after login.');

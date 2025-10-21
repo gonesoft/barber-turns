@@ -10,13 +10,33 @@ declare(strict_types=1);
 require_once __DIR__ . '/session.php';
 
 /**
+ * Normalize a database user row before storing in the session.
+ *
+ * @param array<string,mixed> $user
+ * @return array<string,mixed>
+ */
+function bt_normalize_user(array $user): array
+{
+    return [
+        'id' => isset($user['id']) ? (int)$user['id'] : 0,
+        'name' => $user['name'] ?? ($user['display_name'] ?? ''),
+        'email' => $user['email'] ?? '',
+        'role' => $user['role'] ?? 'viewer',
+        'oauth_provider' => $user['oauth_provider'] ?? ($user['provider'] ?? ''),
+        'oauth_id' => $user['oauth_id'] ?? ($user['provider_id'] ?? ''),
+    ];
+}
+
+/**
  * Return the currently authenticated user from the session, if any.
  */
 function current_user(): ?array
 {
     bt_start_session();
 
-    return $_SESSION['user'] ?? null;
+    $user = $_SESSION['user'] ?? null;
+
+    return is_array($user) ? bt_normalize_user($user) : null;
 }
 
 /**
@@ -37,19 +57,42 @@ function require_login(): array
 }
 
 /**
+ * Ensure the current user meets the minimum role requirement.
+ *
+ * @return array Authenticated user data
+ */
+function require_role(string $minRole): array
+{
+    $hierarchy = [
+        'viewer' => 0,
+        'frontdesk' => 1,
+        'owner' => 2,
+    ];
+
+    $user = require_login();
+    $userRole = $user['role'] ?? 'viewer';
+
+    if (!isset($hierarchy[$userRole], $hierarchy[$minRole])) {
+        http_response_code(403);
+        exit('Forbidden: invalid role configuration.');
+    }
+
+    if ($hierarchy[$userRole] < $hierarchy[$minRole]) {
+        http_response_code(403);
+        exit('Forbidden: insufficient permissions.');
+    }
+
+    return $user;
+}
+
+/**
  * Ensure the current user has owner privileges.
  *
  * @return array Authenticated owner user data
  */
 function require_owner(): array
 {
-    $user = require_login();
-    if (($user['role'] ?? null) !== 'owner') {
-        http_response_code(403);
-        exit('Forbidden: owner role required.');
-    }
-
-    return $user;
+    return require_role('owner');
 }
 
 /**
@@ -58,7 +101,7 @@ function require_owner(): array
 function login_user(array $user): void
 {
     bt_start_session();
-    $_SESSION['user'] = $user;
+    $_SESSION['user'] = bt_normalize_user($user);
 }
 
 /**

@@ -22,3 +22,47 @@ body {
 section[class^="view-"] h2 {
     margin-top: 0;
 }
+
+.badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.badge-viewer {
+    background: #ffe9d6;
+    color: #b85c00;
+}
+
+.badge-active {
+    background: #d6f5e3;
+    color: #046b35;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #0072ff;
+    background: #0072ff;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.btn[disabled],
+.btn:disabled {
+    border-color: #a3a3a3;
+    background: #c8c8c8;
+    color: #666;
+    cursor: not-allowed;
+}
+
+.queue-controls {
+    margin-top: 1.5rem;
+    display: flex;
+    gap: 1rem;
+}

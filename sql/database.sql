@@ -3,14 +3,14 @@
 
 CREATE TABLE IF NOT EXISTS users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    provider ENUM('google', 'apple') NOT NULL,
-    provider_id VARCHAR(255) NOT NULL,
+    oauth_provider ENUM('google', 'apple') NOT NULL,
+    oauth_id VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL,
-    display_name VARCHAR(255) NOT NULL,
-    role ENUM('owner', 'staff') NOT NULL DEFAULT 'staff',
+    name VARCHAR(255) NOT NULL,
+    role ENUM('viewer', 'frontdesk', 'owner') NOT NULL DEFAULT 'viewer',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    UNIQUE KEY provider_lookup (provider, provider_id),
+    UNIQUE KEY provider_lookup (oauth_provider, oauth_id),
     UNIQUE KEY email_unique (email)
 );
 

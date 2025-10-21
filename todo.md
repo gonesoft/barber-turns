@@ -1,6 +1,7 @@
 # Barber Queue App — Build TODO
 
 > Goal: Ship a lightweight PHP 8.3 + MySQL app for DreamHost VPS (Apache) that manages walk‑in rotation with Google/Apple OAuth and a TV read‑only view.
+> **Role Policy:** All new Google/Apple logins are **Viewer (read‑only)** by default. Only **Owner/Admin** can promote to Front‑Desk or Owner.
 
 ## Phase 0 — Repo & Environment (Day 0)
 
@@ -97,6 +98,25 @@
 - [ ] Configure `includes/config.php` (DB + OAuth + security)
 - [ ] Verify `/login` → `/queue` flow
 - [ ] Verify `/tv?token=...` read-only display
+
+- [ ] Create `public/robots.txt` to block search indexing for this subdomain.
+
+**robots.txt contents**
+
+```txt
+User-agent: *
+Disallow: /
+
+# Prevents all crawlers (Google, Bing, etc.) from indexing this subdomain.
+# Place at: https://your-subdomain.yourdomain.com/robots.txt
+```
+
+**Optional (for Apache config / .htaccess)**
+
+```apache
+# Add header to reinforce noindex
+Header set X-Robots-Tag "noindex, nofollow"
+```
 
 ## Phase 12 — QA & Acceptance
 
@@ -229,6 +249,8 @@
 - [ ] Logging in via Google creates/fetches `users` row and lands on `/queue`
 - [ ] Logging out clears session
 - [ ] `/settings` blocks non-owner
+- [x] New OAuth users are created with role 'viewer' and email captured.
+- [x] UI shows a small "View-only" badge for viewers; interactive elements disabled.
 
 ---
 
@@ -242,6 +264,8 @@
 **Files to create**
 
 - `includes/barber_model.php`, `includes/settings_model.php`, `includes/queue_logic.php`
+
+- [ ] Update \`users\` schema: add \`email\` and extend \`role\` enum to ('viewer','frontdesk','owner'); default 'viewer'.
 
 **Definition of Done (Phase 4)**
 
@@ -264,6 +288,8 @@
 
 - `api/barbers.php`, `api/settings.php`, `api/index.php` (optional dispatcher)
 - `api/auth_check.php`
+
+- [ ] Enforce roles: POST /status and /order require Front‑Desk or Owner; viewers get 403 JSON.
 
 **API Contract (cURL examples)**
 
@@ -293,6 +319,14 @@ curl -s -X POST https://yourdomain.com/api/settings.php?action=save \
 # Regenerate TV token (owner)
 curl -s -X POST https://yourdomain.com/api/settings.php?action=regenerate_tv_token
 ```
+
+# Example: viewer attempting to change status should receive 403
+
+curl -i -s -X POST https://yourdomain.com/api/barbers.php?action=status \
+ -H 'Content-Type: application/json' \
+ -d '{"barber_id":1, "status":"busy_walkin"}'
+
+# Expect: HTTP/1.1 403 Forbidden with {"error":"forbidden","reason":"insufficient_role"}
 
 **Expected `list` response shape**
 
@@ -343,6 +377,7 @@ curl -s -X POST https://yourdomain.com/api/settings.php?action=regenerate_tv_tok
 
 - [ ] Clicking a card updates status and the list reflects server order within 1 poll cycle
 - [ ] Timers show mm:ss and reset when back to Available
+- [ ] If current user is Viewer, disable click handlers and show 'View‑only' indicator.
 
 ---
 
@@ -377,6 +412,12 @@ curl -s -X POST https://yourdomain.com/api/settings.php?action=regenerate_tv_tok
 **Files touched**
 
 - `public/views/settings.php`, `api/settings.php`, `includes/settings_model.php`
+
+### Users (Owner only)
+
+- [ ] List users (name, email, provider, role).
+- [ ] Owner can change a user's role (viewer/frontdesk/owner).
+- [ ] Add \`/api/users.php\` endpoints: \`list\` (GET, owner), \`set_role\` (POST, owner).
 
 **Definition of Done (Phase 8)**
 
@@ -422,6 +463,25 @@ curl -s -X POST https://yourdomain.com/api/settings.php?action=regenerate_tv_tok
 - [ ] Verify `/login` → `/queue` flow
 - [ ] Verify `/tv?token=...` read‑only display
 
+- [ ] Create `public/robots.txt` to block search indexing for this subdomain.
+
+**robots.txt contents**
+
+```txt
+User-agent: *
+Disallow: /
+
+# Prevents all crawlers (Google, Bing, etc.) from indexing this subdomain.
+# Place at: https://your-subdomain.yourdomain.com/robots.txt
+```
+
+**Optional (for Apache config / .htaccess)**
+
+```apache
+# Add header to reinforce noindex
+Header set X-Robots-Tag "noindex, nofollow"
+```
+
 **Definition of Done (Phase 11)**
 
 - [ ] Site is reachable over HTTPS with working routes and assets
@@ -446,6 +506,8 @@ curl -s -X POST https://yourdomain.com/api/settings.php?action=regenerate_tv_tok
 5. On A: Toggle same card to Available → timer clears; position unchanged.
 6. Regenerate TV token and confirm old TV URL stops updating.
 
+- [ ] Viewer cannot POST to protected endpoints (403).
+
 ---
 
 ## Phase 13 — Post‑Launch
@@ -465,3 +527,4 @@ curl -s -X POST https://yourdomain.com/api/settings.php?action=regenerate_tv_tok
 - [ ] Toggle back to Available → stays in place; timer clears
 - [ ] TV mode reflects changes within one poll cycle
 - [ ] Settings update title/theme and reflect in UI
+- [ ] Log in as a new user (Viewer): UI is read-only and POSTs return 403.
