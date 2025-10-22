@@ -10,11 +10,12 @@ declare(strict_types=1);
 use DateTime;
 use DateTimeInterface;
 use DateTimeZone;
-require_once __DIR__ . '/auth_check.php';
-require_once __DIR__ . '/../includes/security.php';
-require_once __DIR__ . '/../includes/barber_model.php';
-require_once __DIR__ . '/../includes/queue_logic.php';
-require_once __DIR__ . '/../includes/settings_model.php';
+require_once dirname(__DIR__) . '/bootstrap.php';
+require_once APP_ROOT . '/api/auth_check.php';
+require_once INC_PATH . '/security.php';
+require_once INC_PATH . '/barber_model.php';
+require_once INC_PATH . '/queue_logic.php';
+require_once INC_PATH . '/settings_model.php';
 
 header('Content-Type: application/json');
 

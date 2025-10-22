@@ -5,8 +5,9 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../includes/session.php';
-require_once __DIR__ . '/../includes/security.php';
+require_once dirname(__DIR__) . '/bootstrap.php';
+require_once INC_PATH . '/session.php';
+require_once INC_PATH . '/security.php';
 
 bt_start_session();
 

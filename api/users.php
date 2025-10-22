@@ -7,9 +7,10 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/auth_check.php';
-require_once __DIR__ . '/../includes/user_model.php';
-require_once __DIR__ . '/../includes/security.php';
+require_once dirname(__DIR__) . '/bootstrap.php';
+require_once APP_ROOT . '/api/auth_check.php';
+require_once INC_PATH . '/user_model.php';
+require_once INC_PATH . '/security.php';
 
 header('Content-Type: application/json');
 

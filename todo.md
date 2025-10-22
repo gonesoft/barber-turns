@@ -560,14 +560,14 @@ Header set X-Robots-Tag "noindex, nofollow"
 
 ## Phase C — Root Entry Harden (NEW)
 
-- [ ] Ensure single root entry `index.php` uses `bootstrap.php` to set `APP_ROOT`/`INC_PATH`.
-- [ ] Update all API/Auth scripts to include robust root resolver.
-- [ ] Root `.htaccess`: rewrites, block `/includes`, set `X-Robots-Tag`.
-- [ ] Assets referenced with absolute paths (`/assets/...`).
+- [x] Ensure single root entry `index.php` uses `bootstrap.php` to set `APP_ROOT`/`INC_PATH`.
+- [x] Update all API/Auth scripts to include robust root resolver.
+- [x] Root `.htaccess`: rewrites, block `/includes`, set `X-Robots-Tag`.
+- [x] Assets referenced with absolute paths (`/assets/...`).
 
 **Definition of Done (C)**
 
-- [ ] App works both in Docker and when uploaded via FTP to domain root.
+- [x] App works both in Docker and when uploaded via FTP to domain root.
 
 ## Phase 0 — Repo & Environment (Done)
 

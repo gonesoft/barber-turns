@@ -7,7 +7,8 @@
 
 declare(strict_types=1);
 
-require_once __DIR__ . '/../includes/auth.php';
+require_once dirname(__DIR__) . '/bootstrap.php';
+require_once INC_PATH . '/auth.php';
 
 /**
  * Require an authenticated user; return normalized payload.

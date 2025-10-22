@@ -6,7 +6,8 @@
 declare(strict_types=1);
 
 $title = isset($page_title) ? "Barber Turns — {$page_title}" : 'Barber Turns';
-$baseUrl = rtrim(bt_config()['base_url'] ?? '/', '/');
+$baseUrl = rtrim(bt_config()['base_url'] ?? '', '/');
+$assetBase = $baseUrl !== '' ? $baseUrl : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -14,8 +15,8 @@ $baseUrl = rtrim(bt_config()['base_url'] ?? '/', '/');
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= sanitize_text($title); ?></title>
-    <link rel="stylesheet" href="<?= sanitize_text($baseUrl); ?>/assets/css/base.css">
-    <link rel="stylesheet" href="<?= sanitize_text($baseUrl); ?>/assets/css/tv.css">
+    <link rel="stylesheet" href="<?= sanitize_text($assetBase); ?>/assets/css/base.css">
+    <link rel="stylesheet" href="<?= sanitize_text($assetBase); ?>/assets/css/tv.css">
 </head>
 <body>
 <header class="site-header">
