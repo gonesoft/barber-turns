@@ -550,13 +550,13 @@ Header set X-Robots-Tag "noindex, nofollow"
 
 ## Phase B — Config Over Env (NEW)
 
-- [ ] Create `includes/config_env.php` to read `APP_*` env vars.
-- [ ] Modify `includes/config.php` loader: prefer env (`config_env.php`), else file config.
-- [ ] Ensure DB host resolves to `db` (Docker) and to DreamHost hostname in prod.
+- [x] Create `includes/config_env.php` to read `APP_*` env vars.
+- [x] Modify `includes/config.php` loader: prefer env (`config_env.php`), else file config.
+- [x] Ensure DB host resolves to `db` (Docker) and to DreamHost hostname in prod.
 
 **Definition of Done (B)**
 
-- [ ] Changing env in `docker-compose.yml` modifies app config without code edits.
+- [x] Changing env in `docker-compose.yml` modifies app config without code edits.
 
 ## Phase C — Root Entry Harden (NEW)
 

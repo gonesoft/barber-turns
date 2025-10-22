@@ -13,6 +13,7 @@ services:
       - ./docker/php/php.ini:/usr/local/etc/php/conf.d/app.ini:ro
     environment:
       APP_ENV: docker
+      APP_BASE_URL: http://localhost:8080
       APP_DB_HOST: db
       APP_DB_PORT: 3306
       APP_DB_NAME: barber_turns
