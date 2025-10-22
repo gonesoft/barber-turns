@@ -528,3 +528,161 @@ Header set X-Robots-Tag "noindex, nofollow"
 - [ ] TV mode reflects changes within one poll cycle
 - [ ] Settings update title/theme and reflect in UI
 - [ ] Log in as a new user (Viewer): UI is read-only and POSTs return 403.
+
+# Barber Queue App — Build TODO (Containerized + Root Entry + Tests)
+
+> Goal: Ship a lightweight PHP 8.3 + MySQL app for DreamHost VPS (Apache). Develop & test locally via Docker. **App runs from domain root**, not `/public`.  
+> **Role Policy:** New Google/Apple logins are **Viewer (read-only)** by default. Only **Owner/Admin** can promote roles.
+
+## Phase A — Containerized Local Dev (NEW)
+
+- [x] Add `Dockerfile` (base: `php:8.3-apache`), enable `mod_rewrite`, install `pdo_mysql mbstring curl zip`.
+- [x] Add `docker-compose.yml` with services: `app` (ports `8080:80`) and `db` (MySQL 8, port `33060:3306`).
+- [x] Add `docker/apache/vhost.conf` serving from `/var/www/html` (repo root). Include rewrite rules.
+- [x] Add `docker/php/php.ini` with sane defaults.
+- [x] Mount project root into container `/var/www/html`.
+- [x] Environment variables for DB and OAuth (`APP_*`).
+- [x] Commands: `docker compose up -d`, `docker compose down`, `docker compose logs -f app`.
+
+**Definition of Done (A)**
+
+- [x] `http://localhost:8080/` loads the app entry and `GET /api/barbers.php?action=list` works against container DB.
+
+## Phase B — Config Over Env (NEW)
+
+- [ ] Create `includes/config_env.php` to read `APP_*` env vars.
+- [ ] Modify `includes/config.php` loader: prefer env (`config_env.php`), else file config.
+- [ ] Ensure DB host resolves to `db` (Docker) and to DreamHost hostname in prod.
+
+**Definition of Done (B)**
+
+- [ ] Changing env in `docker-compose.yml` modifies app config without code edits.
+
+## Phase C — Root Entry Harden (NEW)
+
+- [ ] Ensure single root entry `index.php` uses `bootstrap.php` to set `APP_ROOT`/`INC_PATH`.
+- [ ] Update all API/Auth scripts to include robust root resolver.
+- [ ] Root `.htaccess`: rewrites, block `/includes`, set `X-Robots-Tag`.
+- [ ] Assets referenced with absolute paths (`/assets/...`).
+
+**Definition of Done (C)**
+
+- [ ] App works both in Docker and when uploaded via FTP to domain root.
+
+## Phase 0 — Repo & Environment (Done)
+
+- [x] Initialize Git repo and README
+- [x] Base folders created
+- [x] `.gitignore`
+- [x] SQL imported
+
+## Phase 1 — Config & DB Wiring (Done)
+
+- [x] `includes/config.php`, `db.php`, `session.php`, `auth.php`, `security.php`
+- [x] Seed `settings`
+
+## Phase 2 — Router & Views (Root Entry now)
+
+- [ ] `index.php` router at root (`/login`, `/queue`, `/settings`, `/tv`)
+- [ ] Layout: `views/_layout_header.php`, `_layout_footer.php`
+- [ ] Views: `views/login.php`, `views/queue.php`, `views/settings.php`, `views/tv.php`
+- [ ] CSS/JS: `assets/css/base.css`, `assets/css/tv.css`, `assets/js/app.js`, `assets/js/tv.js`, `assets/js/auth.js`
+
+**Definition of Done (Phase 2)**
+
+- [ ] Navigating to `/login`, `/queue`, `/settings`, `/tv` renders
+
+## Phase 3 — OAuth (Google & Apple) (Done, recheck roles)
+
+- [x] OAuth start/callbacks
+- [x] Logout
+- [x] Protect routes
+- [x] Default new users to `viewer`; show View-only UI
+
+## Phase 4 — Models & Queue Logic (Done)
+
+- [x] Barber model, Settings model, Queue logic
+- [x] Normalize positions 1..N
+
+## Phase 5 — API Endpoints (Re‑verify under Docker)
+
+- [ ] `GET /api/barbers.php?action=list` (session or `token`)
+- [ ] `POST /api/barbers.php?action=status` (FD/Owner only)
+- [ ] `POST /api/barbers.php?action=order` (FD/Owner only)
+- [ ] `GET /api/settings.php?action=get`
+- [ ] `POST /api/settings.php?action=save` (Owner)
+- [ ] `POST /api/settings.php?action=regenerate_tv_token` (Owner)
+- [ ] `GET /api/users.php?action=list` (Owner), `POST /api/users.php?action=set_role` (Owner)
+
+**Definition of Done (Phase 5)**
+
+- [ ] All endpoints return correct codes/JSON in Docker environment
+
+## Phase 6 — Interactive Queue UI (Front‑Desk)
+
+- [ ] Render barber cards; timers; color coding
+- [ ] Click → cycle statuses; POST then refresh list
+- [ ] Poll every `ui.poll_ms` ms; diff update
+- [ ] If Viewer, disable interaction + badge
+
+## Phase 7 — TV Mode (Read‑Only)
+
+- [ ] `tv.php` with `?token=...` validation
+- [ ] `assets/js/tv.js` polling
+- [ ] Admin button regenerates token; old URL stops updating
+
+## Phase 8 — Settings (Owner/Admin) (Done)
+
+- [x] Title/theme/logo
+- [x] Barber CRUD
+- [x] Regenerate TV token
+- [x] CSRF protection
+- [x] Users tab: list/set role; endpoints present
+
+## Phase 9 — Security & Hardening
+
+- [ ] Secure session flags; HTTPS recommended
+- [ ] Escape output (XSS)
+- [ ] Validate all API inputs; return proper codes
+- [ ] Rate-limit status updates
+
+## Phase 10 — Styling & UX Polish
+
+- [ ] Responsive cards; transitions; sticky header
+- [ ] Dark mode toggle (persist)
+
+## Phase 11 — Deployment (DreamHost VPS)
+
+- [ ] Upload only **production files** (exclude `docker/`, `vendor/`, `tests/`, `.env*`)
+- [ ] Configure `includes/config.php` with DreamHost DB + OAuth
+- [ ] Verify `/login` → `/queue` flow
+- [ ] Verify `/tv?token=...` read‑only display
+- [ ] Create `robots.txt` in root to block indexing
+
+**robots.txt**
+
+```
+User-agent: *
+Disallow: /
+```
+
+## Phase 12 — Automated Tests (NEW)
+
+- [ ] Add `composer.json` with dev deps: `phpunit/phpunit:^10`.
+- [ ] Add `phpunit.xml` and `tests/` tree: `tests/Unit/QueueLogicTest.php`, `tests/Integration/ApiTest.php`.
+- [ ] Add `tests/fixtures/*.sql` for seeding.
+- [ ] GitHub Actions or local script to run tests in Docker.
+
+**Definition of Done (Phase 12)**
+
+- [ ] `docker compose run --rm app vendor/bin/phpunit` passes
+
+## Phase 13 — QA & Acceptance
+
+- [ ] Manual smoke: two browsers, role checks, timers, token rotation
+
+---
+
+### Make targets (optional)
+
+- [ ] `Makefile` with `up`, `down`, `logs`, `test`, `sh` (shell into container)

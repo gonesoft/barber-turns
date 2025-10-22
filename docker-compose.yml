@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/apache/vhost.conf:/etc/apache2/sites-available/000-default.conf:ro
+      - ./docker/php/php.ini:/usr/local/etc/php/conf.d/app.ini:ro
+    environment:
+      APP_ENV: docker
+      APP_DB_HOST: db
+      APP_DB_PORT: 3306
+      APP_DB_NAME: barber_turns
+      APP_DB_USER: barber_user
+      APP_DB_PASS: barber_pass
+      APP_UI_POLL_MS: 3000
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    container_name: barber_turns_db
+    command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "33060:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pass
+      MYSQL_DATABASE: barber_turns
+      MYSQL_USER: barber_user
+      MYSQL_PASSWORD: barber_pass
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:
