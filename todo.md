@@ -583,14 +583,14 @@ Header set X-Robots-Tag "noindex, nofollow"
 
 ## Phase 2 — Router & Views (Root Entry now)
 
-- [ ] `index.php` router at root (`/login`, `/queue`, `/settings`, `/tv`)
-- [ ] Layout: `views/_layout_header.php`, `_layout_footer.php`
-- [ ] Views: `views/login.php`, `views/queue.php`, `views/settings.php`, `views/tv.php`
-- [ ] CSS/JS: `assets/css/base.css`, `assets/css/tv.css`, `assets/js/app.js`, `assets/js/tv.js`, `assets/js/auth.js`
+- [x] `index.php` router at root (`/login`, `/queue`, `/settings`, `/tv`)
+- [x] Layout: `views/_layout_header.php`, `_layout_footer.php`
+- [x] Views: `views/login.php`, `views/queue.php`, `views/settings.php`, `views/tv.php`
+- [x] CSS/JS: `assets/css/base.css`, `assets/css/tv.css`, `assets/js/app.js`, `assets/js/tv.js`, `assets/js/auth.js`
 
 **Definition of Done (Phase 2)**
 
-- [ ] Navigating to `/login`, `/queue`, `/settings`, `/tv` renders
+- [x] Navigating to `/login`, `/queue`, `/settings`, `/tv` renders
 
 ## Phase 3 — OAuth (Google & Apple) (Done, recheck roles)
 
