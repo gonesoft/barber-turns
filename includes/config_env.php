@@ -27,7 +27,7 @@ function bt_config_from_env(): array
             'port' => isset($env['APP_DB_PORT']) ? (int)$env['APP_DB_PORT'] : 3306,
             'name' => $env['APP_DB_NAME'] ?? 'barber_turns',
             'user' => $env['APP_DB_USER'] ?? 'barber_user',
-            'pass' => $env['APP_DB_PASS'] ?? '',
+            'pass' => $env['APP_DB_PASS'] ?? 'barber_pass',
             'charset' => $env['APP_DB_CHARSET'] ?? 'utf8mb4',
         ],
         'oauth' => [
