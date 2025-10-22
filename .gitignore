@@ -5,3 +5,4 @@ includes/config.php
 /node_modules/
 .DS_Store
 Thumbs.db
+makefile
