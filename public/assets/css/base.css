@@ -320,6 +320,13 @@ section[class^="view-"] h2 {
     gap: 0.75rem;
 }
 
+.view-queue {
+    max-width: 720px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+}
+
 .queue-note {
     margin-top: 0.5rem;
     padding: 0.75rem 1rem;
@@ -339,13 +346,16 @@ section[class^="view-"] h2 {
 
 .queue-grid {
     margin-top: 1.5rem;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
 }
 
 .queue-empty {
-    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 520px;
+    margin: 0 auto;
     text-align: center;
     color: #555;
 }
@@ -363,6 +373,8 @@ section[class^="view-"] h2 {
     border-left: 6px solid transparent;
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    width: 100%;
+    max-width: 520px;
 }
 
 .barber-card:focus-visible {
@@ -470,6 +482,10 @@ section[class^="view-"] h2 {
     }
 
     .queue-grid {
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        align-items: stretch;
+    }
+
+    .barber-card {
+        max-width: 100%;
     }
 }
