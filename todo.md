@@ -31,20 +31,20 @@
 
 ## Phase L — Local Username/Password Login (NEW)
 
-- [ ] Add login UI fields to `views/login.php`: username/email + password; show Google/Apple buttons beneath.
-- [ ] Create `auth/local_login.php` (POST) to authenticate and start session.
-- [ ] Add `includes/passwords.php` with helpers: `hash_password`, `verify_password` (Argon2id).
-- [ ] Update `includes/auth.php`: add `login_user($user)`, update `require_login()` to allow either auth path.
-- [ ] Update router to handle POST from `/login` form to `auth/local_login.php`.
-- [ ] Throttle local login attempts (basic per IP/session).
-- [ ] Update `users` table: add `username`, `password_hash`, `last_login_at` (see PRD v1.3 SQL).
-- [ ] Document a one‑time script to generate a password hash and SQL to insert an Owner.
+- [x] Add login UI fields to `views/login.php`: username/email + password; show Google/Apple buttons beneath.
+- [x] Create `auth/local_login.php` (POST) to authenticate and start session.
+- [x] Add `includes/passwords.php` with helpers: `hash_password`, `verify_password` (Argon2id).
+- [x] Update `includes/auth.php`: add `login_user($user)`, update `require_login()` to allow either auth path.
+- [x] Update router to handle POST from `/login` form to `auth/local_login.php`.
+- [x] Throttle local login attempts (basic per IP/session).
+- [x] Update `users` table: add `username`, `password_hash`, `last_login_at` (see PRD v1.3 SQL).
+- [x] Document a one‑time script to generate a password hash and SQL to insert an Owner.
 
 **Definition of Done (Phase L)**
 
-- [ ] Manual DB insert of Owner can log in locally and reaches `/queue`.
-- [ ] Wrong password is rejected with an error; no session is created.
-- [ ] OAuth continues to function and new OAuth users are Viewer by default.
+- [x] Manual DB insert of Owner can log in locally and reaches `/queue`.
+- [x] Wrong password is rejected with an error; no session is created.
+- [x] OAuth continues to function and new OAuth users are Viewer by default.
 
 - [x] `auth/google_start.php` (redirect to Google OAuth)
 - [x] `auth/google_callback.php` (exchange code → tokens → profile; upsert user; start session)

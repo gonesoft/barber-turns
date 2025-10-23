@@ -20,6 +20,7 @@ function bt_normalize_user(array $user): array
     return [
         'id' => isset($user['id']) ? (int)$user['id'] : 0,
         'name' => $user['name'] ?? ($user['display_name'] ?? ''),
+        'username' => $user['username'] ?? null,
         'email' => $user['email'] ?? '',
         'role' => $user['role'] ?? 'viewer',
         'oauth_provider' => $user['oauth_provider'] ?? ($user['provider'] ?? ''),
