@@ -239,10 +239,10 @@
   function computeNextStatus(current) {
     switch (current) {
       case 'available':
-        return 'busy_walkin';
-      case 'busy_walkin':
         return 'busy_appointment';
       case 'busy_appointment':
+        return 'busy_walkin';
+      case 'busy_walkin':
         return 'available';
       default:
         return 'available';

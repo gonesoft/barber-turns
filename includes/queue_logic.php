@@ -74,6 +74,8 @@ function queue_apply_transition(int $barberId, string $targetStatus, string $act
 
         if ($currentStatus === 'available' && $targetStatus === 'busy_walkin') {
             barber_move_to_bottom($barberId, $pdo);
+        } elseif ($currentStatus === 'busy_appointment' && $targetStatus === 'busy_walkin') {
+            barber_move_to_bottom($barberId, $pdo);
         } elseif ($currentStatus === 'busy_walkin' && $targetStatus === 'available') {
             // When skipping appointment state, keep position but clear timer (handled above).
         } elseif ($currentStatus === 'busy_walkin' && $targetStatus === 'busy_appointment') {
@@ -138,9 +140,9 @@ function queue_manual_reorder(array $orderedIds, string $actorRole): void
 function queue_next_status(string $currentStatus): string
 {
     return match ($currentStatus) {
-        'available' => 'busy_walkin',
-        'busy_walkin' => 'busy_appointment',
-        'busy_appointment' => 'available',
+        'available' => 'busy_appointment',
+        'busy_appointment' => 'busy_walkin',
+        'busy_walkin' => 'available',
         default => 'available',
     };
 }
