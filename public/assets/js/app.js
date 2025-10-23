@@ -34,6 +34,9 @@
   let actionLock = false;
   let reorderingLock = false;
   let draggedCard = null;
+  let draggedId = null;
+  let dropIndex = null;
+  let currentOrder = [];
 
   fetchBarbers();
   startTimerLoop();
@@ -83,6 +86,11 @@
     if (!listEl) {
       return;
     }
+
+    currentOrder = barbers.map((barber) => Number(barber.id));
+    dropIndex = null;
+    draggedId = null;
+    dropIndicator.remove();
 
     const existing = new Map();
     Array.from(listEl.children).forEach((child) => {
@@ -280,6 +288,8 @@
       return;
     }
     draggedCard = event.currentTarget;
+    draggedId = Number(draggedCard.dataset.id);
+    dropIndex = null;
     queueSection.classList.add('is-reordering');
     dropIndicator.style.maxWidth = `${draggedCard.offsetWidth}px`;
     if (event.dataTransfer) {
@@ -334,20 +344,19 @@
     queueSection.classList.remove('is-reordering');
     dropIndicator.remove();
     draggedCard = null;
+    dropIndex = null;
   }
 
-  function finalizeReorder() {
+  function finalizeReorder(order) {
     if (reorderingLock) {
       return;
     }
 
     dropIndicator.remove();
 
-    const order = Array.from(listEl.querySelectorAll('.barber-card'))
-      .map((el) => Number(el.dataset.id))
-      .filter((id) => Number.isInteger(id) && id > 0);
-
-    if (order.length === 0) {
+    if (!Array.isArray(order) || order.length === 0) {
+      queueSection.classList.remove('is-reordering');
+      draggedCard = null;
       return;
     }
 
@@ -360,11 +369,12 @@
       body: JSON.stringify({ order }),
     })
       .then(async (response) => {
+        const text = await response.text();
         if (!response.ok) {
-          throw new Error('reorder_failed');
+          throw new Error(text || 'reorder_failed');
         }
         clearAlert();
-        return response.json();
+        return text ? JSON.parse(text) : {};
       })
       .catch((error) => {
         console.error('Manual reorder failed', error);
@@ -372,16 +382,40 @@
       })
       .finally(() => {
         reorderingLock = false;
+        queueSection.classList.remove('is-reordering');
+        draggedCard = null;
         fetchBarbers();
       });
   }
 
   function updateDropIndicator(clientY, target) {
-    const afterElement = getDragAfterElement(listEl, clientY, target);
-    if (afterElement === null) {
+    const cards = Array.from(listEl.querySelectorAll('.barber-card')).filter((el) => el !== draggedCard);
+    let closest = { offset: Number.NEGATIVE_INFINITY, element: null, index: cards.length };
+
+    if (target && target !== dropIndicator && target !== draggedCard) {
+      const targetIndex = cards.indexOf(target);
+      if (targetIndex !== -1) {
+        const rect = target.getBoundingClientRect();
+        const shouldPlaceAfter = clientY - rect.top > rect.height / 2;
+        closest.element = shouldPlaceAfter ? target.nextElementSibling : target;
+        closest.index = shouldPlaceAfter ? targetIndex + 1 : targetIndex;
+      }
+    } else {
+      cards.forEach((card, index) => {
+        const box = card.getBoundingClientRect();
+        const offset = clientY - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+          closest = { offset, element: card, index };
+        }
+      });
+    }
+
+    dropIndex = closest.element ? Math.max(closest.index, 0) : cards.length;
+
+    if (closest.element === null || closest.element === undefined) {
       listEl.appendChild(dropIndicator);
     } else {
-      listEl.insertBefore(dropIndicator, afterElement);
+      listEl.insertBefore(dropIndicator, closest.element);
     }
   }
 
@@ -389,52 +423,30 @@
     if (!draggedCard) {
       return;
     }
+    if (dropIndex === null) {
+      dropIndex = currentOrder.length;
+    }
+
+    const order = currentOrder.filter((id) => id !== draggedId);
+    const insertIndex = Math.min(dropIndex, order.length);
+    order.splice(insertIndex, 0, draggedId);
+    currentOrder = order.slice();
+
     if (dropIndicator.isConnected) {
       listEl.insertBefore(draggedCard, dropIndicator);
     } else {
-      listEl.appendChild(draggedCard);
-    }
-    finalizeReorder();
-  }
-
-  function getDragAfterElement(container, y, specificTarget) {
-    const draggableElements = [...container.querySelectorAll('.barber-card')]
-      .filter((el) => el !== draggedCard && el !== dropIndicator);
-
-    if (specificTarget && specificTarget !== dropIndicator && specificTarget !== draggedCard) {
-      const rect = specificTarget.getBoundingClientRect();
-      const shouldPlaceAfter = y - rect.top > rect.height / 2;
-      return shouldPlaceAfter ? specificTarget.nextElementSibling : specificTarget;
+      const cards = listEl.querySelectorAll('.barber-card');
+      if (cards[insertIndex]) {
+        listEl.insertBefore(draggedCard, cards[insertIndex]);
+      } else {
+        listEl.appendChild(draggedCard);
+      }
     }
 
-    let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
-
-    draggableElements.forEach((child) => {
-      const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) {
-        closest = { offset, element: child };
-      }
-    });
-
-    return closest.element;
+    finalizeReorder(order);
   }
-  function getDragAfterElement(container, y) {
-    const draggableElements = [...container.querySelectorAll('.barber-card')]
-      .filter((el) => el !== draggedCard && el !== dropIndicator);
 
-    let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
-
-    draggableElements.forEach((child) => {
-      const box = child.getBoundingClientRect();
-      const offset = y - box.top - box.height / 2;
-      if (offset < 0 && offset > closest.offset) {
-        closest = { offset, element: child };
-      }
-    });
-
-    return closest.element;
-  }
+  // getDragAfterElement no longer used; logic moved into updateDropIndicator
 
   function updateTimers() {
     if (!lastServerTime) {
