@@ -389,6 +389,11 @@ section[class^="view-"] h2 {
     z-index: 1;
 }
 
+.barber-card.status-menu-open {
+    z-index: 200;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
+}
+
 .status-menu {
     position: absolute;
     top: calc(100% + 0.5rem);
