@@ -43,7 +43,7 @@ if (is_rate_limited()) {
 
 $pdo = bt_db();
 $stmt = $pdo->prepare('SELECT * FROM users WHERE username = :identifier OR email = :identifier LIMIT 1');
-$stmt->execute([':identifier' => $identifier]);
+$stmt->execute(['identifier' => $identifier]);
 $user = $stmt->fetch();
 
 if (!$user || empty($user['password_hash']) || !verify_password($password, $user['password_hash'])) {

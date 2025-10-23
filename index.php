@@ -6,6 +6,7 @@
 declare(strict_types=1);
 
 require __DIR__ . '/bootstrap.php';
+require_once INC_PATH . '/session.php';
 require_once INC_PATH . '/auth.php';
 require_once INC_PATH . '/security.php';
 
@@ -42,6 +43,7 @@ render_view($view);
  */
 function render_view(string $view): void
 {
+    bt_start_session();
     $viewPath = APP_ROOT . '/public/views/' . $view . '.php';
     if (!file_exists($viewPath)) {
         http_response_code(404);
