@@ -17,11 +17,14 @@
   const isViewer = role === 'viewer';
 
   queueSection.classList.toggle('is-viewer', isViewer);
+
+  const dropIndicator = document.createElement('div');
+  dropIndicator.className = 'queue-drop-indicator';
+
   if (!isViewer && listEl) {
-    listEl.addEventListener('dragover', (event) => {
-      event.preventDefault();
-    });
-    listEl.addEventListener('drop', handleDrop);
+    listEl.addEventListener('dragover', handleListDragOver);
+    listEl.addEventListener('drop', handleListDrop);
+    listEl.addEventListener('dragleave', handleListDragLeave);
   }
 
   let pollingTimeout = null;
@@ -278,40 +281,53 @@
     }
     draggedCard = event.currentTarget;
     queueSection.classList.add('is-reordering');
+    dropIndicator.style.maxWidth = `${draggedCard.offsetWidth}px`;
     if (event.dataTransfer) {
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', draggedCard.dataset.id || '');
     }
   }
 
-  function handleDragOver(event) {
+  function handleListDragOver(event) {
     if (isViewer || !draggedCard) {
       return;
     }
     event.preventDefault();
-    const target = event.currentTarget;
-    if (!target || target === draggedCard || !target.dataset.id) {
-      return;
-    }
-    const rect = target.getBoundingClientRect();
-    const shouldPlaceAfter = event.clientY - rect.top > rect.height / 2;
-    if (shouldPlaceAfter) {
-      target.after(draggedCard);
+    const afterElement = getDragAfterElement(listEl, event.clientY);
+    if (afterElement === null) {
+      listEl.appendChild(dropIndicator);
     } else {
-      listEl.insertBefore(draggedCard, target);
+      listEl.insertBefore(dropIndicator, afterElement);
     }
   }
 
-  function handleDrop(event) {
+  function handleListDrop(event) {
     if (isViewer || !draggedCard) {
       return;
     }
     event.preventDefault();
+    if (dropIndicator.isConnected) {
+      listEl.insertBefore(draggedCard, dropIndicator);
+    } else {
+      listEl.appendChild(draggedCard);
+    }
+    dropIndicator.remove();
     finalizeReorder();
+  }
+
+  function handleListDragLeave(event) {
+    if (!dropIndicator.isConnected) {
+      return;
+    }
+    const related = event.relatedTarget;
+    if (!related || !listEl.contains(related)) {
+      dropIndicator.remove();
+    }
   }
 
   function handleDragEnd() {
     queueSection.classList.remove('is-reordering');
+    dropIndicator.remove();
     draggedCard = null;
   }
 
@@ -320,7 +336,9 @@
       return;
     }
 
-    const order = Array.from(listEl.children)
+    dropIndicator.remove();
+
+    const order = Array.from(listEl.querySelectorAll('.barber-card'))
       .map((el) => Number(el.dataset.id))
       .filter((id) => Number.isInteger(id) && id > 0);
 
@@ -351,6 +369,23 @@
         reorderingLock = false;
         fetchBarbers();
       });
+  }
+
+  function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.barber-card')]
+      .filter((el) => el !== draggedCard && el !== dropIndicator);
+
+    let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+
+    draggableElements.forEach((child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        closest = { offset, element: child };
+      }
+    });
+
+    return closest.element;
   }
 
   function updateTimers() {
