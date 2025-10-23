@@ -17,12 +17,20 @@
   const isViewer = role === 'viewer';
 
   queueSection.classList.toggle('is-viewer', isViewer);
+  if (!isViewer && listEl) {
+    listEl.addEventListener('dragover', (event) => {
+      event.preventDefault();
+    });
+    listEl.addEventListener('drop', handleDrop);
+  }
 
   let pollingTimeout = null;
   let timerInterval = null;
   let lastServerTime = null;
   let lastSyncTimestamp = 0;
   let actionLock = false;
+  let reorderingLock = false;
+  let draggedCard = null;
 
   fetchBarbers();
   startTimerLoop();
@@ -158,8 +166,16 @@
 
     if (isViewer) {
       card.classList.add('is-disabled');
+      card.draggable = false;
     }
-
+    if (!isViewer && !card._dragBound) {
+      card.draggable = true;
+      card.addEventListener('dragstart', handleDragStart);
+      card.addEventListener('dragover', handleDragOver);
+      card.addEventListener('drop', handleDrop);
+      card.addEventListener('dragend', handleDragEnd);
+      card._dragBound = true;
+    }
     return card;
   }
 
@@ -167,13 +183,18 @@
     card.dataset.id = String(barber.id);
     card.dataset.status = barber.status;
     card.dataset.busySince = barber.busy_since || '';
+    if (barber.status !== 'available') {
+      card.dataset.lastNonAvailable = barber.status;
+    }
 
     if (isViewer) {
       card.classList.add('is-disabled');
       card.tabIndex = -1;
+      card.draggable = false;
     } else {
       card.classList.remove('is-disabled');
       card.tabIndex = 0;
+      card.draggable = true;
     }
 
     card._nameEl.textContent = barber.name;
@@ -193,8 +214,7 @@
     }
 
     const id = Number(card.dataset.id);
-    const status = card.dataset.status || 'available';
-    const nextStatus = computeNextStatus(status);
+    const nextStatus = computeNextStatus(card);
 
     if (!nextStatus) {
       return;
@@ -236,17 +256,101 @@
       });
   }
 
-  function computeNextStatus(current) {
-    switch (current) {
-      case 'available':
-        return 'busy_appointment';
-      case 'busy_appointment':
-        return 'busy_walkin';
-      case 'busy_walkin':
-        return 'available';
-      default:
-        return 'available';
+  function computeNextStatus(card) {
+    const current = card.dataset.status || 'available';
+    const lastNonAvailable = card.dataset.lastNonAvailable || null;
+
+    if (current === 'available') {
+      return lastNonAvailable === 'busy_appointment' ? 'busy_walkin' : 'busy_appointment';
     }
+    if (current === 'busy_appointment') {
+      return 'available';
+    }
+    if (current === 'busy_walkin') {
+      return 'available';
+    }
+    return 'available';
+  }
+
+  function handleDragStart(event) {
+    if (isViewer) {
+      return;
+    }
+    draggedCard = event.currentTarget;
+    queueSection.classList.add('is-reordering');
+    if (event.dataTransfer) {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', draggedCard.dataset.id || '');
+    }
+  }
+
+  function handleDragOver(event) {
+    if (isViewer || !draggedCard) {
+      return;
+    }
+    event.preventDefault();
+    const target = event.currentTarget;
+    if (!target || target === draggedCard || !target.dataset.id) {
+      return;
+    }
+    const rect = target.getBoundingClientRect();
+    const shouldPlaceAfter = event.clientY - rect.top > rect.height / 2;
+    if (shouldPlaceAfter) {
+      target.after(draggedCard);
+    } else {
+      listEl.insertBefore(draggedCard, target);
+    }
+  }
+
+  function handleDrop(event) {
+    if (isViewer || !draggedCard) {
+      return;
+    }
+    event.preventDefault();
+    finalizeReorder();
+  }
+
+  function handleDragEnd() {
+    queueSection.classList.remove('is-reordering');
+    draggedCard = null;
+  }
+
+  function finalizeReorder() {
+    if (reorderingLock) {
+      return;
+    }
+
+    const order = Array.from(listEl.children)
+      .map((el) => Number(el.dataset.id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (order.length === 0) {
+      return;
+    }
+
+    reorderingLock = true;
+
+    fetch('/api/barbers.php?action=order', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ order }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error('reorder_failed');
+        }
+        clearAlert();
+        return response.json();
+      })
+      .catch((error) => {
+        console.error('Manual reorder failed', error);
+        showAlert('Unable to reorder the queue right now.', 'warn');
+      })
+      .finally(() => {
+        reorderingLock = false;
+        fetchBarbers();
+      });
   }
 
   function updateTimers() {

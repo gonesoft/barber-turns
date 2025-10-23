@@ -66,26 +66,22 @@ function queue_apply_transition(int $barberId, string $targetStatus, string $act
         $now = date('Y-m-d H:i:s');
         $busySince = $barber['busy_since'];
 
-        if ($targetStatus === 'available') {
-            $busySince = null;
-        } elseif (in_array($targetStatus, ['busy_walkin', 'busy_appointment'], true)) {
+        if ($currentStatus === 'available' && $targetStatus === 'busy_appointment') {
             $busySince = $now;
-        }
-
-        if ($currentStatus === 'available' && $targetStatus === 'busy_walkin') {
+        } elseif ($currentStatus === 'busy_appointment' && $targetStatus === 'available') {
+            $busySince = null;
+        } elseif ($currentStatus === 'available' && $targetStatus === 'busy_walkin') {
+            $busySince = $now;
             barber_move_to_bottom($barberId, $pdo);
         } elseif ($currentStatus === 'busy_appointment' && $targetStatus === 'busy_walkin') {
+            $busySince = $now;
             barber_move_to_bottom($barberId, $pdo);
-        } elseif ($currentStatus === 'busy_walkin' && $targetStatus === 'available') {
-            // When skipping appointment state, keep position but clear timer (handled above).
         } elseif ($currentStatus === 'busy_walkin' && $targetStatus === 'busy_appointment') {
-            // Keep current position, timer already reset above.
-        } elseif ($currentStatus === 'busy_appointment' && $targetStatus === 'available') {
-            // Keep position, timer cleared above.
-        } elseif ($currentStatus === 'available' && $targetStatus === 'busy_appointment') {
-            // Rare direct transition: keep position, start timer.
+            $busySince = $now;
+        } elseif ($currentStatus === 'busy_walkin' && $targetStatus === 'available') {
+            $busySince = null;
         } elseif ($currentStatus === 'inactive' && $targetStatus !== 'inactive') {
-            // Re-activating an inactive barber; move to bottom for fairness.
+            $busySince = $now;
             barber_move_to_bottom($barberId, $pdo);
         }
 
@@ -141,7 +137,7 @@ function queue_next_status(string $currentStatus): string
 {
     return match ($currentStatus) {
         'available' => 'busy_appointment',
-        'busy_appointment' => 'busy_walkin',
+        'busy_appointment' => 'available',
         'busy_walkin' => 'available',
         default => 'available',
     };
