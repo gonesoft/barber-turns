@@ -66,22 +66,15 @@ function queue_apply_transition(int $barberId, string $targetStatus, string $act
         $now = date('Y-m-d H:i:s');
         $busySince = $barber['busy_since'];
 
-        if ($currentStatus === 'available' && $targetStatus === 'busy_appointment') {
-            $busySince = $now;
-        } elseif ($currentStatus === 'busy_appointment' && $targetStatus === 'available') {
+        if ($targetStatus === 'available') {
             $busySince = null;
-        } elseif ($currentStatus === 'available' && $targetStatus === 'busy_walkin') {
+        } else {
             $busySince = $now;
+        }
+
+        if (in_array($targetStatus, ['busy_walkin', 'inactive'], true)) {
             barber_move_to_bottom($barberId, $pdo);
-        } elseif ($currentStatus === 'busy_appointment' && $targetStatus === 'busy_walkin') {
-            $busySince = $now;
-            barber_move_to_bottom($barberId, $pdo);
-        } elseif ($currentStatus === 'busy_walkin' && $targetStatus === 'busy_appointment') {
-            $busySince = $now;
-        } elseif ($currentStatus === 'busy_walkin' && $targetStatus === 'available') {
-            $busySince = null;
         } elseif ($currentStatus === 'inactive' && $targetStatus !== 'inactive') {
-            $busySince = $now;
             barber_move_to_bottom($barberId, $pdo);
         }
 
@@ -139,6 +132,7 @@ function queue_next_status(string $currentStatus): string
         'available' => 'busy_appointment',
         'busy_appointment' => 'available',
         'busy_walkin' => 'available',
+        'inactive' => 'available',
         default => 'available',
     };
 }

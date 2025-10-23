@@ -21,6 +21,18 @@
   const dropIndicator = document.createElement('div');
   dropIndicator.className = 'queue-drop-indicator';
 
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.status-menu') && !event.target.closest('.status-chip')) {
+      closeStatusMenu();
+    }
+  });
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeStatusMenu();
+    }
+  });
+
   if (!isViewer && listEl) {
     listEl.addEventListener('dragover', handleListDragOver);
     listEl.addEventListener('drop', handleListDrop);
@@ -113,11 +125,14 @@
       if (!card) {
         card = createCard(id);
         if (!isViewer) {
-          card.addEventListener('click', () => onCardActivate(card));
-          card.addEventListener('keydown', (event) => {
+          card._statusEl.addEventListener('click', (event) => {
+            event.stopPropagation();
+            toggleStatusMenu(card);
+          });
+          card._statusEl.addEventListener('keydown', (event) => {
             if (event.key === 'Enter' || event.key === ' ') {
               event.preventDefault();
-              onCardActivate(card);
+              toggleStatusMenu(card);
             }
           });
         }
@@ -213,6 +228,10 @@
 
     card._statusEl.textContent = formatStatus(barber.status);
     card._statusEl.className = `status-chip status-${barber.status}`;
+    card._statusEl.tabIndex = isViewer ? -1 : 0;
+    card.dataset.status = barber.status;
+
+    buildStatusMenu(card);
 
     if (!barber.busy_since || barber.status === 'available') {
       card._timerEl.textContent = '--:--';
@@ -283,6 +302,46 @@
     return 'available';
   }
 
+  function buildStatusMenu(card) {
+    if (card._statusMenu) {
+      card._statusMenu.remove();
+    }
+
+    const currentStatus = card.dataset.status || 'available';
+
+    const menu = document.createElement('div');
+    menu.className = 'status-menu';
+    menu.tabIndex = -1;
+    menu.hidden = true;
+    menu.addEventListener('click', (event) => event.stopPropagation());
+
+    const statuses = [
+      { value: 'available', label: 'Available' },
+      { value: 'busy_appointment', label: 'Busy · Appointment' },
+      { value: 'busy_walkin', label: 'Busy · Walk-In' },
+      { value: 'inactive', label: 'Inactive' },
+    ];
+
+    statuses.forEach((status) => {
+      const option = document.createElement('button');
+      option.type = 'button';
+      option.className = 'status-menu__option';
+      option.textContent = status.label;
+      option.dataset.value = status.value;
+      if (status.value === currentStatus) {
+        option.classList.add('is-active');
+      }
+      option.addEventListener('click', () => {
+        applyStatus(card, status.value);
+        closeStatusMenu();
+      });
+      menu.appendChild(option);
+    });
+
+    card._statusMenu = menu;
+    card.appendChild(menu);
+  }
+
   function handleDragStart(event) {
     if (isViewer) {
       return;
@@ -328,12 +387,18 @@
     if (isViewer || !draggedCard) {
       return;
     }
+    if (event.target.closest('.status-menu')) {
+      return;
+    }
     event.preventDefault();
     updateDropIndicator(event.clientY, event.currentTarget);
   }
 
   function handleCardDrop(event) {
     if (isViewer || !draggedCard) {
+      return;
+    }
+    if (event.target.closest('.status-menu')) {
       return;
     }
     event.preventDefault();
@@ -423,6 +488,7 @@
     if (!draggedCard) {
       return;
     }
+    closeStatusMenu();
     if (dropIndex === null) {
       dropIndex = currentOrder.length;
     }
@@ -520,5 +586,66 @@
     alertEl.hidden = true;
     alertEl.textContent = '';
     alertEl.removeAttribute('data-level');
+  }
+  function toggleStatusMenu(card) {
+    if (isViewer) {
+      return;
+    }
+    if (card.classList.contains('status-menu-open')) {
+      closeStatusMenu();
+      return;
+    }
+    closeStatusMenu();
+    card.classList.add('status-menu-open');
+    if (card._statusMenu) {
+      card._statusMenu.hidden = false;
+      card._statusMenu.focus();
+    }
+  }
+
+  function closeStatusMenu() {
+    if (!listEl) {
+      return;
+    }
+    const open = listEl.querySelector('.status-menu-open');
+    if (open) {
+      open.classList.remove('status-menu-open');
+      if (open._statusMenu) {
+        open._statusMenu.hidden = true;
+      }
+    }
+  }
+
+  function applyStatus(card, status) {
+    if (isViewer) {
+      return;
+    }
+    const id = Number(card.dataset.id);
+    if (!status || Number.isNaN(id)) {
+      return;
+    }
+
+    if (status !== 'available') {
+      card.dataset.lastNonAvailable = status;
+    }
+
+    fetch('/api/barbers.php?action=status', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ barber_id: id, status }),
+    })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error('status_failed');
+        }
+        clearAlert();
+        return response.json();
+      })
+      .then(() => fetchBarbers())
+      .catch((err) => {
+        console.error('Status update failed', err);
+        showAlert('Unable to update barber status. Please try again.');
+      });
   }
 })();

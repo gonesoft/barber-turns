@@ -387,6 +387,49 @@ section[class^="view-"] h2 {
     max-width: 520px;
 }
 
+.status-menu {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    right: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
+    border-radius: 10px;
+    padding: 0.5rem;
+    min-width: 220px;
+    z-index: 30;
+}
+
+.status-menu[hidden] {
+    display: none;
+}
+
+.status-menu__option {
+    font: inherit;
+    border: none;
+    background: transparent;
+    text-align: left;
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #0f172a;
+}
+
+.status-menu__option:hover,
+.status-menu__option:focus {
+    outline: none;
+    background: #f1f5f9;
+}
+
+.status-menu__option.is-active {
+    background: #e0f2fe;
+    color: #0f172a;
+    font-weight: 600;
+}
+
 .barber-card:focus-visible {
     outline: 3px solid #0072ff;
     outline-offset: 2px;
