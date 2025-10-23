@@ -55,7 +55,7 @@ if (!$user || empty($user['password_hash']) || !verify_password($password, $user
 
 record_attempt(false, true);
 
-$pdo->prepare('UPDATE users SET last_login_at = NOW() WHERE id = :id')->execute([':id' => $user['id']]);
+$pdo->prepare('UPDATE users SET last_login_at = NOW() WHERE id = :id')->execute(['id' => $user['id']]);
 
 login_user($user);
 
