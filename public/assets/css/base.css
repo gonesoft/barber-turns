@@ -31,6 +31,7 @@ body.layout-tv .site-main {
 
 .site-main {
     padding: 2rem;
+    min-height: calc(100vh - 160px);
 }
 
 section[class^="view-"] h2 {
@@ -98,6 +99,66 @@ section[class^="view-"] h2 {
 .btn-warning:hover {
     background: #d97706;
     border-color: #d97706;
+}
+
+.view-login {
+    max-width: 420px;
+    margin: 6vh auto;
+    padding: 2rem;
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.login-status {
+    font-size: 0.95rem;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.login-error {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    border-radius: 12px;
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.oauth-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-google {
+    background: #4285f4;
+    border-color: #4285f4;
+}
+
+.btn-google:hover {
+    background: #356ac3;
+    border-color: #356ac3;
+}
+
+.btn-apple {
+    background: #0f172a;
+    border-color: #0f172a;
+}
+
+.btn-apple:hover {
+    background: #1e293b;
+    border-color: #1e293b;
 }
 
 .view-settings {
@@ -395,4 +456,20 @@ section[class^="view-"] h2 {
 .barber-card[data-status="inactive"] {
     border-left-color: #777;
     opacity: 0.6;
+}
+
+@media (max-width: 640px) {
+    .site-main {
+        padding: 1.5rem 1rem;
+    }
+
+    .view-login {
+        margin: 4vh auto;
+        padding: 1.5rem;
+        box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    }
+
+    .queue-grid {
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    }
 }
