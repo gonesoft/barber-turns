@@ -49,6 +49,7 @@
   let draggedId = null;
   let dropIndex = null;
   let currentOrder = [];
+  let statusMenuOpenCardId = null;
 
   fetchBarbers();
   startTimerLoop();
@@ -69,6 +70,11 @@
 
   async function fetchBarbers() {
     try {
+      if (statusMenuOpenCardId !== null) {
+        scheduleNextPoll(pollMs);
+        return;
+      }
+
       const response = await fetch('/api/barbers.php?action=list', {
         credentials: 'include',
         headers: { Accept: 'application/json' },
@@ -597,6 +603,7 @@
     }
     closeStatusMenu();
     card.classList.add('status-menu-open');
+    statusMenuOpenCardId = Number(card.dataset.id);
     if (card._statusMenu) {
       card._statusMenu.hidden = false;
       card._statusMenu.focus();
@@ -614,6 +621,7 @@
         open._statusMenu.hidden = true;
       }
     }
+    statusMenuOpenCardId = null;
   }
 
   function applyStatus(card, status) {
