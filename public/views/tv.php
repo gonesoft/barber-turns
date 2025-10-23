@@ -25,7 +25,7 @@ if ($settings === null) {
 }
 
 $pollMs = (int)($settings['poll_interval_ms'] ?? 3000);
-$shopName = $settings['shop_name'] ?? 'Barber Turns';
+$shopName = 'Finest Cut\'z Dominican Barber Shop';
 
 include APP_ROOT . '/public/views/_layout_header.php';
 ?>
@@ -33,7 +33,7 @@ include APP_ROOT . '/public/views/_layout_header.php';
     <header class="tv-header">
         <div>
             <h2 id="tv-shop-name"><?= sanitize_text($shopName); ?></h2>
-            <p class="tv-subtitle">Live Queue</p>
+            <p class="tv-subtitle">Walk-in and Appointment Queue</p>
         </div>
         <p id="tv-last-updated" class="tv-updated">Updating…</p>
     </header>
