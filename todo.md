@@ -29,6 +29,23 @@
 
 ## Phase 3 — OAuth (Google & Apple)
 
+## Phase L — Local Username/Password Login (NEW)
+
+- [ ] Add login UI fields to `views/login.php`: username/email + password; show Google/Apple buttons beneath.
+- [ ] Create `auth/local_login.php` (POST) to authenticate and start session.
+- [ ] Add `includes/passwords.php` with helpers: `hash_password`, `verify_password` (Argon2id).
+- [ ] Update `includes/auth.php`: add `login_user($user)`, update `require_login()` to allow either auth path.
+- [ ] Update router to handle POST from `/login` form to `auth/local_login.php`.
+- [ ] Throttle local login attempts (basic per IP/session).
+- [ ] Update `users` table: add `username`, `password_hash`, `last_login_at` (see PRD v1.3 SQL).
+- [ ] Document a one‑time script to generate a password hash and SQL to insert an Owner.
+
+**Definition of Done (Phase L)**
+
+- [ ] Manual DB insert of Owner can log in locally and reaches `/queue`.
+- [ ] Wrong password is rejected with an error; no session is created.
+- [ ] OAuth continues to function and new OAuth users are Viewer by default.
+
 - [x] `auth/google_start.php` (redirect to Google OAuth)
 - [x] `auth/google_callback.php` (exchange code → tokens → profile; upsert user; start session)
 - [x] `auth/apple_start.php` (auth request with proper scopes)
@@ -593,6 +610,23 @@ Header set X-Robots-Tag "noindex, nofollow"
 - [x] Navigating to `/login`, `/queue`, `/settings`, `/tv` renders
 
 ## Phase 3 — OAuth (Google & Apple) (Done, recheck roles)
+
+## Phase L — Local Username/Password Login (NEW)
+
+- [ ] Add login UI fields to `views/login.php`: username/email + password; show Google/Apple buttons beneath.
+- [ ] Create `auth/local_login.php` (POST) to authenticate and start session.
+- [ ] Add `includes/passwords.php` with helpers: `hash_password`, `verify_password` (Argon2id).
+- [ ] Update `includes/auth.php`: add `login_user($user)`, update `require_login()` to allow either auth path.
+- [ ] Update router to handle POST from `/login` form to `auth/local_login.php`.
+- [ ] Throttle local login attempts (basic per IP/session).
+- [ ] Update `users` table: add `username`, `password_hash`, `last_login_at` (see PRD v1.3 SQL).
+- [ ] Document a one‑time script to generate a password hash and SQL to insert an Owner.
+
+**Definition of Done (Phase L)**
+
+- [ ] Manual DB insert of Owner can log in locally and reaches `/queue`.
+- [ ] Wrong password is rejected with an error; no session is created.
+- [ ] OAuth continues to function and new OAuth users are Viewer by default.
 
 - [x] OAuth start/callbacks
 - [x] Logout

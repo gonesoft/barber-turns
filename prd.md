@@ -1,8 +1,11 @@
-# Barber Queue Management App (PRD)
+# Barber Queue Management App (PRD) v1.3
 
-**Version:** 1.0  
-**Environment:** DreamHost VPS (Apache + PHP 8.3 + MySQL)  
-**Deployment:** Document-root (no container, no framework)  
+**Environment:**
+
+- Development: Docker (PHP 8.3 + Apache + MySQL)
+- Production: DreamHost VPS (Apache + PHP 8.3 + MySQL)
+
+**Deployment:** Root entry (no public subfolder), containerized dev environment, FTP/SSH for prod.  
 **Platform:** Web (responsive for phone, desktop, TV)
 
 ---
@@ -24,7 +27,9 @@ The system is designed for:
 1. Provide a **fair, transparent rotation** among barbers.
 2. Enable **quick status updates** with one tap.
 3. Support **responsive display** across devices and TV.
-4. Use a **lightweight PHP + MySQL** stack deployable via FTP/SSH.
+4. Use a **lightweight PHP + MySQL** stack deployable via FTP/SSH or containerized for development.
+5. Support both **OAuth (Google/Apple)** and **local username/password** authentication.
+6. Enable **root-entry deployment** without a public subfolder for easier hosting.
 
 ---
 
@@ -53,16 +58,17 @@ The system is designed for:
 - When any “Busy” status is set, a **timer starts** in the corner of the card.
 - Resets when status returns to “Available.”
 
-### 3.4 Roles
+### 3.4 Roles & Permissions
 
-| Role            | Permissions                                                   |
-| --------------- | ------------------------------------------------------------- |
-| **Owner/Admin** | Manage barbers, update title/theme/logo, regenerate TV token. |
-| **Front-Desk**  | Toggle statuses, reorder queue, view TV mode.                 |
+| Role            | Permissions                                                                 |
+| --------------- | --------------------------------------------------------------------------- |
+| **Owner/Admin** | Manage barbers, update title/theme/logo, regenerate TV token, manage users. |
+| **Front-Desk**  | Toggle statuses, reorder queue, view TV mode.                               |
 
 ### 3.5 Authentication
 
-- OAuth via **Google** and **Apple** only.
+- OAuth via **Google** and **Apple**.
+- Local login via **username/password** with secure password hashing.
 - Sessions persist until logout or browser close.
 - **TV Mode** uses a tokenized public URL with read-only access.
 
@@ -76,31 +82,32 @@ The system is designed for:
 
 ## 4. Functional Requirements
 
-| ID   | Requirement                                         | Priority |
-| ---- | --------------------------------------------------- | -------- |
-| FR-1 | Display list of barbers with name and status.       | High     |
-| FR-2 | Toggle barber status by tapping or clicking.        | High     |
-| FR-3 | Move cards according to status rules.               | High     |
-| FR-4 | Auto-refresh every 2–5 seconds (polling).           | High     |
-| FR-5 | Google/Apple OAuth login.                           | High     |
-| FR-6 | Admin can edit title/logo/theme.                    | Medium   |
-| FR-7 | Public TV view using token URL.                     | High     |
-| FR-8 | Save queue state and persist on reload.             | High     |
-| FR-9 | Store all data in MySQL (barbers, users, settings). | High     |
+| ID    | Requirement                                         | Priority |
+| ----- | --------------------------------------------------- | -------- |
+| FR-1  | Display list of barbers with name and status.       | High     |
+| FR-2  | Toggle barber status by tapping or clicking.        | High     |
+| FR-3  | Move cards according to status rules.               | High     |
+| FR-4  | Auto-refresh every 2–5 seconds (polling).           | High     |
+| FR-5  | Google/Apple OAuth login plus local login.          | High     |
+| FR-6  | Admin can edit title/logo/theme and manage users.   | Medium   |
+| FR-7  | Public TV view using token URL.                     | High     |
+| FR-8  | Save queue state and persist on reload.             | High     |
+| FR-9  | Store all data in MySQL (barbers, users, settings). | High     |
+| FR-10 | Support containerized development environment.      | Medium   |
 
 ---
 
 ## 5. Non-Functional Requirements
 
-| Category             | Specification                                     |
-| -------------------- | ------------------------------------------------- |
-| **Performance**      | Status change visible across screens within 2–5s. |
-| **Scalability**      | Single shop, ≤ 12 barbers.                        |
-| **Security**         | OAuth + secure session; TV token randomized.      |
-| **Deployment**       | Works on Apache/PHP 8.3 + MySQL via FTP/SSH.      |
-| **Stack Simplicity** | Plain PHP, minimal libraries.                     |
-| **Responsiveness**   | Bootstrap or TailwindCSS.                         |
-| **Polling Interval** | 2–5 seconds using AJAX.                           |
+| Category             | Specification                                                                   |
+| -------------------- | ------------------------------------------------------------------------------- |
+| **Performance**      | Status change visible across screens within 2–5s.                               |
+| **Scalability**      | Single shop, ≤ 12 barbers.                                                      |
+| **Security**         | OAuth + local login with password hashing; secure session; TV token randomized. |
+| **Deployment**       | Works on Apache/PHP 8.3 + MySQL via FTP/SSH; Docker for dev.                    |
+| **Stack Simplicity** | Plain PHP, minimal libraries.                                                   |
+| **Responsiveness**   | Bootstrap or TailwindCSS.                                                       |
+| **Polling Interval** | 2–5 seconds using AJAX.                                                         |
 
 ---
 
@@ -109,6 +116,7 @@ The system is designed for:
 ### 6.1 Login
 
 - Buttons: “Sign in with Google” / “Sign in with Apple”
+- Local login form: username + password
 - Redirect to Main Queue after success.
 
 ### 6.2 Queue Screen
@@ -124,6 +132,7 @@ The system is designed for:
 - Change shop title, logo, theme.
 - Add/remove/edit barbers.
 - Regenerate TV token.
+- Manage users (add/edit roles, reset passwords).
 
 ### 6.4 TV Mode
 
@@ -145,18 +154,20 @@ The system is designed for:
 
 ---
 
-## 8. Database Schema
+## 8. Database Schema Updates
 
 ### `users`
 
-| Field          | Type                      | Notes              |
-| -------------- | ------------------------- | ------------------ |
-| id             | INT, PK                   |                    |
-| oauth_provider | VARCHAR(20)               | google/apple       |
-| oauth_id       | VARCHAR(100)              | unique external ID |
-| name           | VARCHAR(100)              | user name          |
-| role           | ENUM('owner','frontdesk') |                    |
-| created_at     | TIMESTAMP                 |                    |
+| Field          | Type                      | Notes                                                     |
+| -------------- | ------------------------- | --------------------------------------------------------- |
+| id             | INT, PK                   |                                                           |
+| oauth_provider | VARCHAR(20)               | google/apple/null                                         |
+| oauth_id       | VARCHAR(100)              | unique external ID or NULL for local users                |
+| username       | VARCHAR(50)               | unique for local login; nullable for OAuth users          |
+| password_hash  | VARCHAR(255)              | hashed password for local login; nullable for OAuth users |
+| name           | VARCHAR(100)              | user name                                                 |
+| role           | ENUM('owner','frontdesk') |                                                           |
+| created_at     | TIMESTAMP                 |                                                           |
 
 ### `barbers`
 
@@ -190,6 +201,9 @@ The system is designed for:
 | POST   | `/api/barbers.php?action=order`  | Manual reorder (by user drag/drop).          |
 | GET    | `/api/settings.php?action=get`   | Get app title/logo/theme.                    |
 | POST   | `/api/settings.php?action=save`  | Update configuration (admin).                |
+| GET    | `/api/users.php?action=list`     | List users (admin only).                     |
+| POST   | `/api/users.php?action=save`     | Add/edit user (admin only).                  |
+| POST   | `/api/users.php?action=delete`   | Delete user (admin only).                    |
 | GET    | `/tv?token=XYZ`                  | TV read-only view.                           |
 
 ---
@@ -228,50 +242,52 @@ The system is designed for:
 
 ## 12. Directory Structure
 
-/barber-queue-app/
-├─ public/
-│ ├─ index.php
-│ ├─ .htaccess
-│ ├─ assets/
-│ │ ├─ css/
-│ │ │ ├─ base.css
-│ │ │ └─ tv.css
-│ │ ├─ js/
-│ │ │ ├─ app.js
-│ │ │ ├─ tv.js
-│ │ │ └─ auth.js
-│ │ └─ img/
-│ │ └─ logo.png
-│ └─ views/
-│ ├─ login.php
-│ ├─ queue.php
-│ ├─ settings.php
-│ ├─ tv.php
-│ ├─ \_layout_header.php
-│ └─ \_layout_footer.php
-├─ api/
-│ ├─ barbers.php
-│ ├─ settings.php
-│ ├─ index.php
-│ └─ auth_check.php
-├─ auth/
-│ ├─ google_start.php
-│ ├─ google_callback.php
-│ ├─ apple_start.php
-│ ├─ apple_callback.php
-│ └─ logout.php
-├─ includes/
-│ ├─ config.php
-│ ├─ db.php
-│ ├─ session.php
-│ ├─ auth.php
-│ ├─ queue_logic.php
-│ ├─ barber_model.php
-│ ├─ settings_model.php
-│ └─ security.php
-├─ sql/
-│ └─ database.sql
-├─ README.md
+/barber-queue-app/  
+├─ assets/  
+│ ├─ css/  
+│ │ ├─ base.css  
+│ │ └─ tv.css  
+│ ├─ js/  
+│ │ ├─ app.js  
+│ │ ├─ tv.js  
+│ │ └─ auth.js  
+│ └─ img/  
+│ └─ logo.png  
+├─ views/  
+│ ├─ login.php  
+│ ├─ queue.php  
+│ ├─ settings.php  
+│ ├─ tv.php  
+│ ├─ \_layout_header.php  
+│ └─ \_layout_footer.php  
+├─ api/  
+│ ├─ barbers.php  
+│ ├─ settings.php  
+│ ├─ users.php  
+│ ├─ auth_check.php  
+│ └─ index.php  
+├─ auth/  
+│ ├─ google_start.php  
+│ ├─ google_callback.php  
+│ ├─ apple_start.php  
+│ ├─ apple_callback.php  
+│ ├─ local_login.php  
+│ └─ logout.php  
+├─ includes/  
+│ ├─ config.php  
+│ ├─ db.php  
+│ ├─ session.php  
+│ ├─ auth.php  
+│ ├─ queue_logic.php  
+│ ├─ barber_model.php  
+│ ├─ settings_model.php  
+│ ├─ user_model.php  
+│ └─ security.php  
+├─ sql/  
+│ └─ database.sql  
+├─ Dockerfile  
+├─ docker-compose.yml  
+├─ README.md  
 └─ LICENSE
 
 ---
@@ -292,16 +308,25 @@ The system is designed for:
 
 ---
 
-## 14. Deployment Checklist
+## 14. Deployment & Development
+
+### 14.1 Production (DreamHost VPS)
 
 1. Create MySQL DB and user in DreamHost panel.
-2. Upload files via FTP or SSH.
+2. Upload files via FTP or SSH to root directory (no public subfolder).
 3. Import `/sql/database.sql`.
 4. Configure `includes/config.php` with DB and OAuth keys.
-5. Set document root to `/public`.
+5. Set document root to app root.
 6. Test `/login` and `/queue`.
 7. Configure `/settings` for title/logo/theme.
 8. Use `/tv?token=YOUR_TOKEN` for TV display.
+
+### 14.2 Development (Docker)
+
+- Use provided `Dockerfile` and `docker-compose.yml` for local dev environment.
+- Run `docker-compose up` to start PHP, Apache, and MySQL containers.
+- Access app at `http://localhost`.
+- Supports hot reload and debugging.
 
 ---
 
@@ -312,8 +337,10 @@ The system is designed for:
 - Timer appears correctly for busy barbers.
 - Statuses persist across reloads.
 - TV mode works via token without login.
-- Google/Apple sign-in redirects correctly.
+- Google/Apple sign-in and local login redirect correctly.
 - Responsive design scales properly across devices.
+- Admin can manage users, barbers, and settings.
+- Containerized dev environment works as expected.
 
 ---
 
@@ -323,6 +350,7 @@ The system is designed for:
 - Multi-location support.
 - Analytics dashboard (cuts per barber, average wait).
 - Push notifications for “next barber ready.”
+- Improved accessibility features.
 
 ---
 
