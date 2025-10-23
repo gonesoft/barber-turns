@@ -148,10 +148,21 @@ function barber_reorder(array $orderedIds, string $actorRole, ?PDO $pdo = null):
     $pdo->beginTransaction();
 
     try {
+        $count = count($orderedIds);
+        $offset = (int)$pdo->query('SELECT COALESCE(MAX(position), 0) FROM barbers')->fetchColumn();
+        $offset = max($offset, $count) + 10;
+
+        $tempStmt = $pdo->prepare('UPDATE barbers SET position = :position, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
+        foreach ($orderedIds as $index => $id) {
+            $tempStmt->execute([
+                ':position' => $offset + $index + 1,
+                ':id' => (int)$id,
+            ]);
+        }
+
         $position = 1;
-        $stmt = $pdo->prepare('UPDATE barbers SET position = :position, updated_at = CURRENT_TIMESTAMP WHERE id = :id');
         foreach ($orderedIds as $id) {
-            $stmt->execute([
+            $tempStmt->execute([
                 ':position' => $position++,
                 ':id' => (int)$id,
             ]);
