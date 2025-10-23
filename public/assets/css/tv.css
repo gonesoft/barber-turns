@@ -29,24 +29,32 @@
 }
 
 .tv-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     display: flex;
     flex-wrap: wrap;
     align-items: flex-end;
     justify-content: space-between;
     gap: 1.5rem;
+    padding: 1.5rem clamp(1.5rem, 4vw, 2.5rem);
+    background: #e0171f;
+    border-radius: 18px;
+    box-shadow: 0 18px 40px rgba(224, 23, 31, 0.35);
+    color: #ffffff;
 }
 
 .tv-header h2 {
     margin: 0;
     font-size: clamp(2.5rem, 4vw, 4rem);
     letter-spacing: 0.04em;
-    color: #0f172a;
+    color: #ffffff;
 }
 
 .tv-subtitle {
     margin: 0.35rem 0 0;
     font-size: clamp(1.1rem, 2vw, 1.5rem);
-    color: #475569;
+    color: rgba(255, 255, 255, 0.82);
     letter-spacing: 0.2em;
     text-transform: uppercase;
 }
@@ -54,7 +62,7 @@
 .tv-updated {
     margin: 0;
     font-size: clamp(1rem, 2vw, 1.25rem);
-    color: #475569;
+    color: rgba(255, 255, 255, 0.82);
 }
 
 .tv-alert {

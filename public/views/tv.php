@@ -25,7 +25,7 @@ if ($settings === null) {
 }
 
 $pollMs = (int)($settings['poll_interval_ms'] ?? 3000);
-$shopName = 'Finest Cut\'z Dominican Barber Shop';
+$shopName = 'Finest Cut\'z Dominican Barbershop';
 
 include APP_ROOT . '/public/views/_layout_header.php';
 ?>
