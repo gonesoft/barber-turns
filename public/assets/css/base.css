@@ -386,7 +386,7 @@ section[class^="view-"] h2 {
     width: 100%;
     max-width: 520px;
     overflow: visible;
-    z-index: 0;
+    z-index: 1;
 }
 
 .status-menu {
