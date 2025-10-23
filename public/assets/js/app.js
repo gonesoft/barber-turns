@@ -174,9 +174,9 @@
     if (!isViewer && !card._dragBound) {
       card.draggable = true;
       card.addEventListener('dragstart', handleDragStart);
-      card.addEventListener('dragover', handleDragOver);
-      card.addEventListener('drop', handleDrop);
       card.addEventListener('dragend', handleDragEnd);
+      card.addEventListener('dragover', handleCardDragOver);
+      card.addEventListener('drop', handleCardDrop);
       card._dragBound = true;
     }
     return card;
@@ -293,12 +293,7 @@
       return;
     }
     event.preventDefault();
-    const afterElement = getDragAfterElement(listEl, event.clientY);
-    if (afterElement === null) {
-      listEl.appendChild(dropIndicator);
-    } else {
-      listEl.insertBefore(dropIndicator, afterElement);
-    }
+    updateDropIndicator(event.clientY);
   }
 
   function handleListDrop(event) {
@@ -306,13 +301,7 @@
       return;
     }
     event.preventDefault();
-    if (dropIndicator.isConnected) {
-      listEl.insertBefore(draggedCard, dropIndicator);
-    } else {
-      listEl.appendChild(draggedCard);
-    }
-    dropIndicator.remove();
-    finalizeReorder();
+    placeDraggedCard();
   }
 
   function handleListDragLeave(event) {
@@ -323,6 +312,22 @@
     if (!related || !listEl.contains(related)) {
       dropIndicator.remove();
     }
+  }
+
+  function handleCardDragOver(event) {
+    if (isViewer || !draggedCard) {
+      return;
+    }
+    event.preventDefault();
+    updateDropIndicator(event.clientY, event.currentTarget);
+  }
+
+  function handleCardDrop(event) {
+    if (isViewer || !draggedCard) {
+      return;
+    }
+    event.preventDefault();
+    placeDraggedCard();
   }
 
   function handleDragEnd() {
@@ -371,6 +376,49 @@
       });
   }
 
+  function updateDropIndicator(clientY, target) {
+    const afterElement = getDragAfterElement(listEl, clientY, target);
+    if (afterElement === null) {
+      listEl.appendChild(dropIndicator);
+    } else {
+      listEl.insertBefore(dropIndicator, afterElement);
+    }
+  }
+
+  function placeDraggedCard() {
+    if (!draggedCard) {
+      return;
+    }
+    if (dropIndicator.isConnected) {
+      listEl.insertBefore(draggedCard, dropIndicator);
+    } else {
+      listEl.appendChild(draggedCard);
+    }
+    finalizeReorder();
+  }
+
+  function getDragAfterElement(container, y, specificTarget) {
+    const draggableElements = [...container.querySelectorAll('.barber-card')]
+      .filter((el) => el !== draggedCard && el !== dropIndicator);
+
+    if (specificTarget && specificTarget !== dropIndicator && specificTarget !== draggedCard) {
+      const rect = specificTarget.getBoundingClientRect();
+      const shouldPlaceAfter = y - rect.top > rect.height / 2;
+      return shouldPlaceAfter ? specificTarget.nextElementSibling : specificTarget;
+    }
+
+    let closest = { offset: Number.NEGATIVE_INFINITY, element: null };
+
+    draggableElements.forEach((child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) {
+        closest = { offset, element: child };
+      }
+    });
+
+    return closest.element;
+  }
   function getDragAfterElement(container, y) {
     const draggableElements = [...container.querySelectorAll('.barber-card')]
       .filter((el) => el !== draggedCard && el !== dropIndicator);
