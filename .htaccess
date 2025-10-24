@@ -5,6 +5,9 @@ Options -Indexes
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
+    # Serve static assets located under /public/assets
+    RewriteRule ^assets/(.+)$ public/assets/$1 [L]
+
     # Block direct access to includes and private directories
     RewriteRule ^includes/ - [F,L]
 

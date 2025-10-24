@@ -26,7 +26,35 @@ body.layout-tv .site-main {
     padding: 1rem;
     background: #e0171f;
     color: #fff;
-    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+}
+
+.site-title {
+    margin: 0;
+    font-size: 1.75rem;
+}
+
+.site-nav {
+    margin-left: auto;
+}
+
+.logout-link {
+    color: #fff;
+    text-decoration: none;
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    transition: background 0.15s ease;
+}
+
+.logout-link:hover,
+.logout-link:focus {
+    background: rgba(255, 255, 255, 0.18);
+    outline: none;
 }
 
 .site-main {
