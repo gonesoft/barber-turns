@@ -47,7 +47,12 @@ function bt_db(): PDO
         PDO::ATTR_EMULATE_PREPARES => false,
     ];
 
-    $pdo = new PDO($dsn, $config['db']['user'], $config['db']['pass'], $options);
+    try {
+        $pdo = new PDO($dsn, $config['db']['user'], $config['db']['pass'], $options);
+    } catch (PDOException $e) {
+        error_log('bt_db connection failed: ' . $e->getMessage() . ' DSN=' . $dsn);
+        throw $e;
+    }
 
     return $pdo;
 }
