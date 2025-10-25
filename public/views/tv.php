@@ -38,8 +38,10 @@ include APP_ROOT . '/public/views/_layout_header.php';
         </header>
     </div>
     <div id="tv-alert" class="tv-alert" hidden></div>
-    <div id="tv-queue" class="tv-grid">
-        <p class="tv-empty">Loading queue…</p>
+    <div class="tv-queue-wrap">
+        <div id="tv-queue" class="tv-grid">
+            <p class="tv-empty">Loading queue…</p>
+        </div>
     </div>
 </section>
 <?php
