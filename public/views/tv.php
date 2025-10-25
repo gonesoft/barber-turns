@@ -30,16 +30,18 @@ $shopName = 'Finest Cut\'z Dominican Barbershop';
 include APP_ROOT . '/public/views/_layout_header.php';
 ?>
 <section class="view-tv" data-token="<?= sanitize_text($token); ?>" data-poll="<?= $pollMs; ?>">
-    <header class="tv-header">
-        <div>
+    <div class="tv-header-wrap">
+        <header class="tv-header">
             <h2 id="tv-shop-name"><?= sanitize_text($shopName); ?></h2>
             <p class="tv-subtitle">Walk-in and Appointment Queue</p>
-        </div>
-        <p id="tv-last-updated" class="tv-updated">Updating…</p>
-    </header>
+            <p id="tv-last-updated" class="tv-updated">Updating…</p>
+        </header>
+    </div>
     <div id="tv-alert" class="tv-alert" hidden></div>
-    <div id="tv-queue" class="tv-grid">
-        <p class="tv-empty">Loading queue…</p>
+    <div class="tv-queue-wrap">
+        <div id="tv-queue" class="tv-grid">
+            <p class="tv-empty">Loading queue…</p>
+        </div>
     </div>
 </section>
 <?php
