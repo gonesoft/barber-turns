@@ -34,7 +34,6 @@
     }
   });
 
-  let pollingTimeout = null;
   let timerInterval = null;
   let lastServerTime = null;
   let lastSyncTimestamp = 0;
@@ -48,17 +47,102 @@
   let pointerDragActive = false;
   let activePointerId = null;
   let pendingPointerCard = null;
+  let pendingPointerHandle = null;
   let pointerStartX = 0;
   let pointerStartY = 0;
+  let draggedHandle = null;
 
-  fetchBarbers();
+  let pollIntervalId = null;
+  let resumeTimeoutId = null;
+  let fetchInFlight = false;
+  let bufferedPayload = null;
+  let isDragging = false;
+  let dragPhase = 'idle';
+  let currentPollMs = pollMs;
+
+  initDnD(listEl);
+
   startTimerLoop();
+  (async () => {
+    await fetchBarbers(true);
+    startPolling();
+  })();
 
-  function scheduleNextPoll(delay = pollMs) {
-    if (pollingTimeout) {
-      clearTimeout(pollingTimeout);
+  function setDragPhase(next) {
+    if (dragPhase === next) {
+      return;
     }
-    pollingTimeout = window.setTimeout(fetchBarbers, delay);
+    console.debug('[dnd] %s -> %s', dragPhase, next);
+    dragPhase = next;
+  }
+
+  function startPolling() {
+    if (pollIntervalId) {
+      clearInterval(pollIntervalId);
+    }
+    pollIntervalId = window.setInterval(() => {
+      if (isDragging || dragPhase !== 'idle') {
+        console.debug('[poll] skipped (dragging)');
+        return;
+      }
+      fetchBarbers();
+    }, currentPollMs);
+    console.debug('[poll] started (%dms)', currentPollMs);
+  }
+
+  function pausePolling() {
+    if (pollIntervalId) {
+      clearInterval(pollIntervalId);
+      pollIntervalId = null;
+      console.debug('[poll] paused');
+    }
+    if (resumeTimeoutId) {
+      clearTimeout(resumeTimeoutId);
+      resumeTimeoutId = null;
+    }
+  }
+
+  function resumePolling({ immediateFetch = true } = {}) {
+    if (resumeTimeoutId) {
+      clearTimeout(resumeTimeoutId);
+    }
+    resumeTimeoutId = window.setTimeout(() => {
+      resumeTimeoutId = null;
+      startPolling();
+      if (immediateFetch) {
+        fetchBarbers(true);
+      }
+    }, 300);
+  }
+
+  function flushBufferedPayload() {
+    if (!bufferedPayload) {
+      return;
+    }
+    const payload = bufferedPayload;
+    bufferedPayload = null;
+    console.debug('[dnd] applying buffered payload');
+    applyPayload(payload);
+  }
+
+  function initDnD(root) {
+    if (!root || isViewer) {
+      return () => {};
+    }
+
+    const delegatedPointerDown = (event) => {
+      const handle = event.target.closest('.drag-handle');
+      if (!handle || !root.contains(handle)) {
+        return;
+      }
+      handleDragPointerDown(handle, event);
+    };
+
+    root.addEventListener('pointerdown', delegatedPointerDown);
+
+    return () => {
+      root.removeEventListener('pointerdown', delegatedPointerDown);
+    };
   }
 
   function startTimerLoop() {
@@ -68,13 +152,24 @@
     timerInterval = window.setInterval(updateTimers, 1000);
   }
 
-  async function fetchBarbers() {
-    try {
-      if (statusMenuOpenCardId !== null) {
-        scheduleNextPoll(pollMs);
-        return;
-      }
+  async function fetchBarbers(force = false) {
+    if (fetchInFlight && !force) {
+      return;
+    }
 
+    if (statusMenuOpenCardId !== null && !force) {
+      console.debug('[poll] fetch skipped (status menu open)');
+      return;
+    }
+
+    if ((isDragging || dragPhase !== 'idle') && !force) {
+      console.debug('[poll] fetch skipped during drag');
+      return;
+    }
+
+    fetchInFlight = true;
+
+    try {
       const response = await fetch('/api/barbers.php?action=list', {
         credentials: 'include',
         headers: { Accept: 'application/json' },
@@ -85,22 +180,37 @@
       }
 
       const payload = await response.json();
-      const barbers = Array.isArray(payload.data) ? payload.data : [];
-      lastServerTime = payload.server_time ? new Date(payload.server_time) : null;
-      lastSyncTimestamp = Date.now();
 
-      renderBarbers(barbers);
+      if (dragPhase !== 'idle' || isDragging) {
+        bufferedPayload = payload;
+        console.debug('[dnd] payload buffered during %s phase', dragPhase);
+        return;
+      }
+
+      applyPayload(payload);
       clearAlert();
-
-      scheduleNextPoll(payload.poll_interval_ms || pollMs);
     } catch (err) {
       console.error('Failed to load barbers', err);
       showAlert('Unable to load queue. Retrying…');
-      scheduleNextPoll(Math.max(pollMs, 5000));
+    } finally {
+      fetchInFlight = false;
     }
   }
 
-  function renderBarbers(barbers) {
+  function applyPayload(payload) {
+    const barbers = Array.isArray(payload?.data) ? payload.data : [];
+    lastServerTime = payload?.server_time ? new Date(payload.server_time) : null;
+    lastSyncTimestamp = Date.now();
+    if (typeof payload?.poll_interval_ms === 'number' && payload.poll_interval_ms > 0 && payload.poll_interval_ms !== currentPollMs) {
+      currentPollMs = payload.poll_interval_ms;
+      console.debug('[poll] interval updated to %dms', currentPollMs);
+      startPolling();
+    }
+    renderQueue(barbers);
+    clearAlert();
+  }
+
+  function renderQueue(barbers) {
     if (!listEl) {
       return;
     }
@@ -163,6 +273,18 @@
     card.tabIndex = isViewer ? -1 : 0;
     card.dataset.id = String(id);
 
+    const handle = document.createElement('div');
+    handle.className = 'drag-handle';
+    handle.setAttribute('aria-grabbed', 'false');
+    handle.setAttribute('title', 'Drag to reorder');
+    handle.setAttribute('role', 'button');
+    handle.setAttribute('aria-label', 'Drag to reorder');
+    handle.tabIndex = isViewer ? -1 : 0;
+    if (isViewer) {
+      handle.setAttribute('aria-hidden', 'true');
+      handle.hidden = true;
+    }
+
     const header = document.createElement('div');
     header.className = 'barber-card__header';
 
@@ -188,6 +310,7 @@
     meta.appendChild(positionEl);
     meta.appendChild(timerEl);
 
+    card.appendChild(handle);
     card.appendChild(header);
     card.appendChild(meta);
 
@@ -195,19 +318,15 @@
     card._statusEl = statusEl;
     card._positionEl = positionEl;
     card._timerEl = timerEl;
+    card._dragHandle = handle;
 
     if (isViewer) {
       card.classList.add('is-disabled');
       card.draggable = false;
     }
-    if (!isViewer && !card._dragBound) {
+    if (!isViewer) {
       card.draggable = false;
       card._statusEl.draggable = false;
-      card.addEventListener('pointerdown', handleCardPointerDown);
-      card.addEventListener('pointermove', handleCardPointerMove);
-      card.addEventListener('pointerup', handleCardPointerUp);
-      card.addEventListener('pointercancel', handleCardPointerCancel);
-      card._dragBound = true;
     }
     return card;
   }
@@ -218,6 +337,20 @@
     card.dataset.busySince = barber.busy_since || '';
     if (barber.status !== 'available') {
       card.dataset.lastNonAvailable = barber.status;
+    }
+
+    if (card._dragHandle) {
+      if (isViewer) {
+        card._dragHandle.setAttribute('aria-hidden', 'true');
+        card._dragHandle.setAttribute('aria-grabbed', 'false');
+        card._dragHandle.tabIndex = -1;
+        card._dragHandle.hidden = true;
+      } else {
+        card._dragHandle.removeAttribute('aria-hidden');
+        card._dragHandle.setAttribute('aria-grabbed', 'false');
+        card._dragHandle.tabIndex = 0;
+        card._dragHandle.hidden = false;
+      }
     }
 
     if (isViewer) {
@@ -349,44 +482,68 @@
     card.appendChild(menu);
   }
 
-  function startDragSession(card) {
+  function startDragSession(card, handle) {
     if (!card || !listEl) {
       return false;
     }
 
     draggedCard = card;
+    draggedHandle = handle || card._dragHandle || null;
     draggedId = Number(card.dataset.id);
     const currentPosition = currentOrder.indexOf(draggedId);
     dropIndex = currentPosition === -1 ? null : currentPosition;
     queueSection.classList.add('is-reordering');
-    dropIndicator.style.maxWidth = `${card.offsetWidth}px`;
     closeStatusMenu();
-    card.classList.add('is-dragging');
+
+    const cardRect = card.getBoundingClientRect();
+    const listRect = listEl.getBoundingClientRect();
+    const scrollTop = listEl.scrollTop;
+
+    if (draggedHandle) {
+      draggedHandle.setAttribute('aria-grabbed', 'true');
+    }
+
+    card.classList.add('dragging');
     card.style.pointerEvents = 'none';
-    card.style.touchAction = 'none';
-    card.style.opacity = '0.78';
-    card.style.willChange = 'transform';
+    card.style.width = `${cardRect.width}px`;
+    card.style.left = `${cardRect.left - listRect.left}px`;
+    card.style.top = `${cardRect.top - listRect.top + scrollTop}px`;
+    card.style.position = 'absolute';
     card.style.zIndex = '100';
+    card.style.transform = 'translate3d(0, 0, 0)';
+    card.style.willChange = 'transform, opacity';
+    card.style.opacity = '0.95';
+
+    dropIndicator.style.height = `${cardRect.height}px`;
+    dropIndicator.style.maxWidth = `${cardRect.width}px`;
+
+    if (!dropIndicator.isConnected) {
+      listEl.insertBefore(dropIndicator, card.nextElementSibling);
+    }
+
+    updateDropIndicator(cardRect.top + cardRect.height / 2);
     pendingPointerCard = null;
-    const rect = card.getBoundingClientRect();
-    updateDropIndicator(rect.top + rect.height / 2);
+    pendingPointerHandle = null;
+    isDragging = true;
+    setDragPhase('dragging');
+    pausePolling();
     return true;
   }
 
-  function resetPointerState(card, pointerId) {
-    if (card) {
-      card.style.touchAction = '';
+  function resetPointerState(handle, pointerId) {
+    if (handle) {
+      handle.setAttribute('aria-grabbed', 'false');
       if (
         typeof pointerId === 'number'
-        && typeof card.hasPointerCapture === 'function'
-        && typeof card.releasePointerCapture === 'function'
+        && typeof handle.hasPointerCapture === 'function'
+        && typeof handle.releasePointerCapture === 'function'
       ) {
         try {
-          if (card.hasPointerCapture(pointerId)) {
-            card.releasePointerCapture(pointerId);
+          if (handle.hasPointerCapture(pointerId)) {
+            handle.releasePointerCapture(pointerId);
           }
         } catch (err) {
-          // ignore release errors (e.g. pointer already cancelled)
+          // ignore pointer capture release errors
         }
       }
     }
@@ -394,44 +551,67 @@
     pointerDragActive = false;
     activePointerId = null;
     pendingPointerCard = null;
+    pendingPointerHandle = null;
     pointerStartX = 0;
     pointerStartY = 0;
   }
 
-  function handleCardPointerDown(event) {
-    if (isViewer || pointerDragActive || event.target.closest('.status-chip') || event.target.closest('.status-menu')) {
+  function addGlobalPointerListeners() {
+    window.addEventListener('pointermove', handleDragPointerMove, { passive: false });
+    window.addEventListener('pointerup', handleDragPointerUp);
+    window.addEventListener('pointercancel', handleDragPointerCancel);
+  }
+
+  function removeGlobalPointerListeners() {
+    window.removeEventListener('pointermove', handleDragPointerMove, { passive: false });
+    window.removeEventListener('pointerup', handleDragPointerUp);
+    window.removeEventListener('pointercancel', handleDragPointerCancel);
+  }
+
+  function handleDragPointerDown(handle, event) {
+    if (isViewer || pointerDragActive) {
       return;
     }
     if (event.pointerType === 'mouse' && event.button !== 0) {
       return;
     }
 
+    const card = handle.closest('.barber-card');
+    if (!card) {
+      return;
+    }
+
+    event.stopPropagation();
+
     pointerDragActive = true;
     activePointerId = event.pointerId;
-    pendingPointerCard = event.currentTarget;
+    pendingPointerCard = card;
+    pendingPointerHandle = handle;
     pointerStartX = event.clientX;
     pointerStartY = event.clientY;
+    setDragPhase('pending');
 
-    if (typeof event.currentTarget.setPointerCapture === 'function') {
+    if (typeof handle.setPointerCapture === 'function') {
       try {
-        event.currentTarget.setPointerCapture(event.pointerId);
+        handle.setPointerCapture(event.pointerId);
       } catch (err) {
-        // ignore pointer capture errors (browser/platform differences)
+        // ignore pointer capture errors
       }
     }
 
-    if (event.pointerType === 'mouse' || event.pointerType === 'touch' || event.pointerType === 'pen') {
-      event.preventDefault();
-    }
+    addGlobalPointerListeners();
+    event.preventDefault();
   }
 
-  function handleCardPointerMove(event) {
+  function handleDragPointerMove(event) {
     if (!pointerDragActive || event.pointerId !== activePointerId) {
       return;
     }
 
+    const handle = pendingPointerHandle || draggedHandle;
     const card = pendingPointerCard || draggedCard;
-    if (!card) {
+
+    if (!card || isViewer) {
       return;
     }
 
@@ -441,8 +621,10 @@
       if (deltaX + deltaY < POINTER_DRAG_THRESHOLD) {
         return;
       }
-      if (!startDragSession(card)) {
-        resetPointerState(card, event.pointerId);
+      if (!startDragSession(card, handle)) {
+        resetPointerState(handle, event.pointerId);
+        removeGlobalPointerListeners();
+        setDragPhase('idle');
         return;
       }
       pointerStartX = event.clientX;
@@ -450,55 +632,76 @@
     }
 
     event.preventDefault();
-    updateDropIndicator(event.clientY);
 
-    if (draggedCard) {
-      const translateY = event.clientY - pointerStartY;
-      draggedCard.style.transform = `translate3d(0, ${translateY}px, 0)`;
-    }
+    const translateY = event.clientY - pointerStartY;
+    draggedCard.style.transform = `translate3d(0, ${translateY}px, 0)`;
+
+    const cardRect = draggedCard.getBoundingClientRect();
+    const midpoint = cardRect.top + cardRect.height / 2;
+    updateDropIndicator(midpoint);
   }
 
-  function handleCardPointerUp(event) {
+  function handleDragPointerUp(event) {
     if (!pointerDragActive || event.pointerId !== activePointerId) {
       return;
     }
 
-    const card = pendingPointerCard || draggedCard || event.currentTarget;
-    resetPointerState(card, event.pointerId);
+    const handle = draggedHandle || pendingPointerHandle;
+    resetPointerState(handle, event.pointerId);
+    removeGlobalPointerListeners();
 
     if (!draggedCard) {
+      setDragPhase('idle');
       return;
     }
 
     event.preventDefault();
+    setDragPhase('dropping');
     placeDraggedCard();
   }
 
-  function handleCardPointerCancel(event) {
+  function handleDragPointerCancel(event) {
     if (!pointerDragActive || event.pointerId !== activePointerId) {
       return;
     }
 
-    const card = pendingPointerCard || draggedCard || event.currentTarget;
+    const handle = draggedHandle || pendingPointerHandle;
+    resetPointerState(handle, event.pointerId);
+    removeGlobalPointerListeners();
 
     queueSection.classList.remove('is-reordering');
+    dropIndicator.style.height = '';
+    dropIndicator.style.maxWidth = '';
     dropIndicator.remove();
 
     if (draggedCard) {
-      draggedCard.classList.remove('is-dragging');
-      draggedCard.style.pointerEvents = '';
-      draggedCard.style.touchAction = '';
-      draggedCard.style.transform = '';
-      draggedCard.style.opacity = '';
-      draggedCard.style.willChange = '';
-      draggedCard.style.zIndex = '';
+      cleanupDraggedCardStyles(draggedCard);
     }
 
     draggedCard = null;
-    dropIndex = null;
     draggedId = null;
+    dropIndex = null;
+    if (draggedHandle) {
+      draggedHandle.setAttribute('aria-grabbed', 'false');
+      draggedHandle = null;
+    }
+    isDragging = false;
+    setDragPhase('idle');
+    flushBufferedPayload();
+    resumePolling();
+  }
 
-    resetPointerState(card, event.pointerId);
+  function cleanupDraggedCardStyles(card) {
+    card.classList.remove('dragging');
+    card.style.pointerEvents = '';
+    card.style.position = '';
+    card.style.width = '';
+    card.style.left = '';
+    card.style.top = '';
+    card.style.transform = '';
+    card.style.opacity = '';
+    card.style.willChange = '';
+    card.style.zIndex = '';
   }
 
   function finalizeReorder(order) {
@@ -506,11 +709,19 @@
       return;
     }
 
-    dropIndicator.remove();
-
     if (!Array.isArray(order) || order.length === 0) {
       queueSection.classList.remove('is-reordering');
+      if (draggedCard) {
+        cleanupDraggedCardStyles(draggedCard);
+      }
       draggedCard = null;
+      draggedId = null;
+      dropIndex = null;
+      draggedHandle = null;
+      isDragging = false;
+      setDragPhase('idle');
+      flushBufferedPayload();
+      resumePolling();
       return;
     }
 
@@ -537,8 +748,20 @@
       .finally(() => {
         reorderingLock = false;
         queueSection.classList.remove('is-reordering');
+        if (draggedCard) {
+          cleanupDraggedCardStyles(draggedCard);
+        }
         draggedCard = null;
-        fetchBarbers();
+        draggedId = null;
+        dropIndex = null;
+        if (draggedHandle) {
+          draggedHandle.setAttribute('aria-grabbed', 'false');
+        }
+        draggedHandle = null;
+        isDragging = false;
+        setDragPhase('idle');
+        flushBufferedPayload();
+        resumePolling();
       });
   }
 
@@ -596,13 +819,15 @@
       }
     }
 
-    draggedCard.classList.remove('is-dragging');
-    draggedCard.style.pointerEvents = '';
-    draggedCard.style.touchAction = '';
-    draggedCard.style.transform = '';
-    draggedCard.style.opacity = '';
-    draggedCard.style.willChange = '';
-    draggedCard.style.zIndex = '';
+    cleanupDraggedCardStyles(draggedCard);
+    dropIndicator.style.height = '';
+    dropIndicator.style.maxWidth = '';
+    dropIndicator.remove();
+
+    if (draggedHandle) {
+      draggedHandle.setAttribute('aria-grabbed', 'false');
+      draggedHandle = null;
+    }
 
     finalizeReorder(order);
   }

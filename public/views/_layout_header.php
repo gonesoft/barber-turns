@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-$title = isset($page_title) ? "Barber Turns — {$page_title}" : 'Barber Turns';
+pu$title = isset($page_title) ? "Barber Turns — {$page_title}" : 'Barber Turns';
 $baseUrl = rtrim(bt_config()['base_url'] ?? '', '/');
 $assetBase = $baseUrl !== '' ? $baseUrl : '';
 $currentUser = current_user();
@@ -21,7 +21,7 @@ $currentUser = current_user();
 </head>
 <body>
 <header class="site-header">
-    <h1 class="site-title">Barber Turns</h1>
+    <h1 class="site-title">Finest Cutz Dominican Barber Shop</h1>
     <?php if ($currentUser && ($currentUser['role'] ?? '') === 'owner'): ?>
         <nav class="site-nav">
             <a class="logout-link" href="<?= sanitize_text($baseUrl); ?>/logout">Logout</a>
