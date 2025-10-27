@@ -394,8 +394,8 @@
     const cardBack = document.createElement('div');
     cardBack.className = 'card-face card-back';
 
-    const backTitle = document.createElement('p');
-    backTitle.className = 'card-back-title';
+    const backTitle = document.createElement('div');
+    backTitle.className = 'status-title';
     backTitle.textContent = 'Update Status';
 
     const backOptions = document.createElement('div');
