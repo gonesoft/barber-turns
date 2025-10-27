@@ -5,7 +5,7 @@
 
 declare(strict_types=1);
 
-pu$title = isset($page_title) ? "Barber Turns — {$page_title}" : 'Barber Turns';
+$title = isset($page_title) ? "Barber Turns — {$page_title}" : 'Finest Cutz Dominican Barber Shop';
 $baseUrl = rtrim(bt_config()['base_url'] ?? '', '/');
 $assetBase = $baseUrl !== '' ? $baseUrl : '';
 $currentUser = current_user();
