@@ -20,6 +20,7 @@
 
   const dropIndicator = document.createElement('div');
   dropIndicator.className = 'queue-drop-indicator';
+  const POINTER_DRAG_THRESHOLD = 6;
 
   document.addEventListener('click', (event) => {
     if (!event.target.closest('.status-menu') && !event.target.closest('.status-chip')) {
@@ -33,12 +34,6 @@
     }
   });
 
-  if (!isViewer && listEl) {
-    listEl.addEventListener('dragover', handleListDragOver);
-    listEl.addEventListener('drop', handleListDrop);
-    listEl.addEventListener('dragleave', handleListDragLeave);
-  }
-
   let pollingTimeout = null;
   let timerInterval = null;
   let lastServerTime = null;
@@ -50,6 +45,11 @@
   let dropIndex = null;
   let currentOrder = [];
   let statusMenuOpenCardId = null;
+  let pointerDragActive = false;
+  let activePointerId = null;
+  let pendingPointerCard = null;
+  let pointerStartX = 0;
+  let pointerStartY = 0;
 
   fetchBarbers();
   startTimerLoop();
@@ -201,11 +201,12 @@
       card.draggable = false;
     }
     if (!isViewer && !card._dragBound) {
-      card.draggable = true;
-      card.addEventListener('dragstart', handleDragStart);
-      card.addEventListener('dragend', handleDragEnd);
-      card.addEventListener('dragover', handleCardDragOver);
-      card.addEventListener('drop', handleCardDrop);
+      card.draggable = false;
+      card._statusEl.draggable = false;
+      card.addEventListener('pointerdown', handleCardPointerDown);
+      card.addEventListener('pointermove', handleCardPointerMove);
+      card.addEventListener('pointerup', handleCardPointerUp);
+      card.addEventListener('pointercancel', handleCardPointerCancel);
       card._dragBound = true;
     }
     return card;
@@ -226,7 +227,7 @@
     } else {
       card.classList.remove('is-disabled');
       card.tabIndex = 0;
-      card.draggable = true;
+      card.draggable = false;
     }
 
     card._nameEl.textContent = barber.name;
@@ -348,74 +349,156 @@
     card.appendChild(menu);
   }
 
-  function handleDragStart(event) {
-    if (isViewer) {
+  function startDragSession(card) {
+    if (!card || !listEl) {
+      return false;
+    }
+
+    draggedCard = card;
+    draggedId = Number(card.dataset.id);
+    const currentPosition = currentOrder.indexOf(draggedId);
+    dropIndex = currentPosition === -1 ? null : currentPosition;
+    queueSection.classList.add('is-reordering');
+    dropIndicator.style.maxWidth = `${card.offsetWidth}px`;
+    closeStatusMenu();
+    card.classList.add('is-dragging');
+    card.style.pointerEvents = 'none';
+    card.style.touchAction = 'none';
+    card.style.opacity = '0.78';
+    card.style.willChange = 'transform';
+    card.style.zIndex = '100';
+    pendingPointerCard = null;
+    const rect = card.getBoundingClientRect();
+    updateDropIndicator(rect.top + rect.height / 2);
+    return true;
+  }
+
+  function resetPointerState(card, pointerId) {
+    if (card) {
+      card.style.touchAction = '';
+      if (
+        typeof pointerId === 'number'
+        && typeof card.hasPointerCapture === 'function'
+        && typeof card.releasePointerCapture === 'function'
+      ) {
+        try {
+          if (card.hasPointerCapture(pointerId)) {
+            card.releasePointerCapture(pointerId);
+          }
+        } catch (err) {
+          // ignore release errors (e.g. pointer already cancelled)
+        }
+      }
+    }
+
+    pointerDragActive = false;
+    activePointerId = null;
+    pendingPointerCard = null;
+    pointerStartX = 0;
+    pointerStartY = 0;
+  }
+
+  function handleCardPointerDown(event) {
+    if (isViewer || pointerDragActive || event.target.closest('.status-chip') || event.target.closest('.status-menu')) {
       return;
     }
-    draggedCard = event.currentTarget;
-    draggedId = Number(draggedCard.dataset.id);
-    dropIndex = null;
-    queueSection.classList.add('is-reordering');
-    dropIndicator.style.maxWidth = `${draggedCard.offsetWidth}px`;
-    if (event.dataTransfer) {
-      event.dataTransfer.effectAllowed = 'move';
-      event.dataTransfer.setData('text/plain', draggedCard.dataset.id || '');
+    if (event.pointerType === 'mouse' && event.button !== 0) {
+      return;
+    }
+
+    pointerDragActive = true;
+    activePointerId = event.pointerId;
+    pendingPointerCard = event.currentTarget;
+    pointerStartX = event.clientX;
+    pointerStartY = event.clientY;
+
+    if (typeof event.currentTarget.setPointerCapture === 'function') {
+      try {
+        event.currentTarget.setPointerCapture(event.pointerId);
+      } catch (err) {
+        // ignore pointer capture errors (browser/platform differences)
+      }
+    }
+
+    if (event.pointerType === 'mouse' || event.pointerType === 'touch' || event.pointerType === 'pen') {
+      event.preventDefault();
     }
   }
 
-  function handleListDragOver(event) {
-    if (isViewer || !draggedCard) {
+  function handleCardPointerMove(event) {
+    if (!pointerDragActive || event.pointerId !== activePointerId) {
       return;
     }
+
+    const card = pendingPointerCard || draggedCard;
+    if (!card) {
+      return;
+    }
+
+    if (!draggedCard) {
+      const deltaX = Math.abs(event.clientX - pointerStartX);
+      const deltaY = Math.abs(event.clientY - pointerStartY);
+      if (deltaX + deltaY < POINTER_DRAG_THRESHOLD) {
+        return;
+      }
+      if (!startDragSession(card)) {
+        resetPointerState(card, event.pointerId);
+        return;
+      }
+      pointerStartX = event.clientX;
+      pointerStartY = event.clientY;
+    }
+
     event.preventDefault();
     updateDropIndicator(event.clientY);
+
+    if (draggedCard) {
+      const translateY = event.clientY - pointerStartY;
+      draggedCard.style.transform = `translate3d(0, ${translateY}px, 0)`;
+    }
   }
 
-  function handleListDrop(event) {
-    if (isViewer || !draggedCard) {
+  function handleCardPointerUp(event) {
+    if (!pointerDragActive || event.pointerId !== activePointerId) {
       return;
     }
+
+    const card = pendingPointerCard || draggedCard || event.currentTarget;
+    resetPointerState(card, event.pointerId);
+
+    if (!draggedCard) {
+      return;
+    }
+
     event.preventDefault();
     placeDraggedCard();
   }
 
-  function handleListDragLeave(event) {
-    if (!dropIndicator.isConnected) {
+  function handleCardPointerCancel(event) {
+    if (!pointerDragActive || event.pointerId !== activePointerId) {
       return;
     }
-    const related = event.relatedTarget;
-    if (!related || !listEl.contains(related)) {
-      dropIndicator.remove();
-    }
-  }
 
-  function handleCardDragOver(event) {
-    if (isViewer || !draggedCard) {
-      return;
-    }
-    if (event.target.closest('.status-menu')) {
-      return;
-    }
-    event.preventDefault();
-    updateDropIndicator(event.clientY, event.currentTarget);
-  }
+    const card = pendingPointerCard || draggedCard || event.currentTarget;
 
-  function handleCardDrop(event) {
-    if (isViewer || !draggedCard) {
-      return;
-    }
-    if (event.target.closest('.status-menu')) {
-      return;
-    }
-    event.preventDefault();
-    placeDraggedCard();
-  }
-
-  function handleDragEnd() {
     queueSection.classList.remove('is-reordering');
     dropIndicator.remove();
+
+    if (draggedCard) {
+      draggedCard.classList.remove('is-dragging');
+      draggedCard.style.pointerEvents = '';
+      draggedCard.style.touchAction = '';
+      draggedCard.style.transform = '';
+      draggedCard.style.opacity = '';
+      draggedCard.style.willChange = '';
+      draggedCard.style.zIndex = '';
+    }
+
     draggedCard = null;
     dropIndex = null;
+    draggedId = null;
+
+    resetPointerState(card, event.pointerId);
   }
 
   function finalizeReorder(order) {
@@ -459,34 +542,32 @@
       });
   }
 
-  function updateDropIndicator(clientY, target) {
+  function updateDropIndicator(clientY) {
     const cards = Array.from(listEl.querySelectorAll('.barber-card')).filter((el) => el !== draggedCard);
-    let closest = { offset: Number.NEGATIVE_INFINITY, element: null, index: cards.length };
 
-    if (target && target !== dropIndicator && target !== draggedCard) {
-      const targetIndex = cards.indexOf(target);
-      if (targetIndex !== -1) {
-        const rect = target.getBoundingClientRect();
-        const shouldPlaceAfter = clientY - rect.top > rect.height / 2;
-        closest.element = shouldPlaceAfter ? target.nextElementSibling : target;
-        closest.index = shouldPlaceAfter ? targetIndex + 1 : targetIndex;
-      }
-    } else {
-      cards.forEach((card, index) => {
-        const box = card.getBoundingClientRect();
-        const offset = clientY - box.top - box.height / 2;
-        if (offset < 0 && offset > closest.offset) {
-          closest = { offset, element: card, index };
-        }
-      });
+    if (cards.length === 0) {
+      dropIndex = 0;
+      listEl.appendChild(dropIndicator);
+      return;
     }
 
-    dropIndex = closest.element ? Math.max(closest.index, 0) : cards.length;
+    let insertIndex = cards.length;
 
-    if (closest.element === null || closest.element === undefined) {
-      listEl.appendChild(dropIndicator);
+    for (let index = 0; index < cards.length; index += 1) {
+      const rect = cards[index].getBoundingClientRect();
+      const midpoint = rect.top + rect.height / 2;
+      if (clientY < midpoint) {
+        insertIndex = index;
+        break;
+      }
+    }
+
+    dropIndex = insertIndex;
+    const referenceNode = insertIndex < cards.length ? cards[insertIndex] : null;
+    if (referenceNode) {
+      listEl.insertBefore(dropIndicator, referenceNode);
     } else {
-      listEl.insertBefore(dropIndicator, closest.element);
+      listEl.appendChild(dropIndicator);
     }
   }
 
@@ -514,6 +595,14 @@
         listEl.appendChild(draggedCard);
       }
     }
+
+    draggedCard.classList.remove('is-dragging');
+    draggedCard.style.pointerEvents = '';
+    draggedCard.style.touchAction = '';
+    draggedCard.style.transform = '';
+    draggedCard.style.opacity = '';
+    draggedCard.style.willChange = '';
+    draggedCard.style.zIndex = '';
 
     finalizeReorder(order);
   }

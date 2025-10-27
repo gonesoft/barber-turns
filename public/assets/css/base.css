@@ -387,7 +387,7 @@ section[class^="view-"] h2 {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.25rem;
+    gap: calc(1.25rem + 10px);
 }
 
 .queue-empty {
