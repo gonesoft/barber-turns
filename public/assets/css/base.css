@@ -414,36 +414,26 @@ section[class^="view-"] h2 {
 
 .barber-card {
     position: relative;
-    background: #fff;
     border-radius: 12px;
-    padding: 0.85rem 1.1rem;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
     border-left: 6px solid transparent;
     cursor: pointer;
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    transition: transform 0.15s ease;
     width: 100%;
     max-width: 520px;
     overflow: visible;
     z-index: 1;
     display: grid;
     grid-template-columns: auto 1fr;
-    grid-auto-rows: auto;
-    gap: 0.6rem 1rem;
+    align-items: stretch;
+    gap: 0 1rem;
 }
 
 .barber-card.dragging {
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
     cursor: grabbing;
 }
 
-.barber-card.status-menu-open {
-    z-index: 200;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.18);
-}
-
-.barber-card__header,
-.barber-card__meta {
-    grid-column: 2;
+.barber-card.dragging .card-face {
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.16);
 }
 
 .drag-handle {
@@ -481,49 +471,160 @@ section[class^="view-"] h2 {
     background: rgba(15, 23, 42, 0.12);
 }
 
-.status-menu {
-    position: absolute;
-    top: calc(100% + 0.5rem);
-    right: 0;
+.card-3d {
+    position: relative;
+    grid-column: 2;
+    width: 100%;
+    perspective: 1000px;
+}
+
+.card-3d-inner {
+    position: relative;
+    width: 100%;
+    min-height: 100%;
+    transition: transform 300ms ease;
+    transform-style: preserve-3d;
+}
+
+.card-face {
+    position: relative;
+    width: 100%;
+    min-height: 100%;
+    padding: 0.85rem 1.1rem;
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    backface-visibility: hidden;
+}
+
+.card-face.card-front {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    background: #ffffff;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 14px 32px rgba(15, 23, 42, 0.18);
-    border-radius: 10px;
-    padding: 0.5rem;
-    min-width: 220px;
-    z-index: 60;
+    gap: 0.75rem;
 }
 
-.status-menu[hidden] {
-    display: none;
+.card-face.card-back {
+    position: absolute;
+    inset: 0;
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
 }
 
-.status-menu__option {
-    font: inherit;
+.card-3d.is-flipped .card-3d-inner {
+    transform: rotateY(180deg);
+}
+
+.card-back-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    text-align: center;
+    color: #0f172a;
+}
+
+.card-back-options {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.card-back-option {
+    padding: 0.75rem 1rem;
+    border-radius: 999px;
     border: none;
-    background: transparent;
-    text-align: left;
-    padding: 0.45rem 0.6rem;
-    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
     color: #0f172a;
-}
-
-.status-menu__option:hover,
-.status-menu__option:focus {
-    outline: none;
     background: #f1f5f9;
+    transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
-.status-menu__option.is-active {
-    background: #e0f2fe;
-    color: #0f172a;
+.card-back-option:hover,
+.card-back-option:focus-visible {
+    outline: none;
+    transform: translateY(-1px);
+    background: #e2e8f0;
+}
+
+.card-back-option.is-active {
+    background: #1d74f5;
+    color: #ffffff;
+}
+
+.card-back-option.status-available {
+    background: rgba(14, 159, 110, 0.12);
+    color: #046b35;
+}
+
+.card-back-option.status-busy_walkin {
+    background: rgba(220, 38, 38, 0.12);
+    color: #aa1d1d;
+}
+
+.card-back-option.status-busy_appointment {
+    background: rgba(245, 158, 11, 0.12);
+    color: #9c5a00;
+}
+
+.card-back-option.status-available.is-active {
+    background: #0e9f6e;
+    color: #ffffff;
+}
+
+.card-back-option.status-busy_walkin.is-active {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.card-back-option.status-busy_appointment.is-active {
+    background: #f59e0b;
+    color: #1f2937;
+}
+
+.card-back-cancel {
+    align-self: center;
+    padding: 0.5rem 1.4rem;
+    border-radius: 999px;
+    border: 1px solid #94a3b8;
+    background: transparent;
+    color: #475569;
     font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
+.card-back-cancel:hover,
+.card-back-cancel:focus-visible {
+    outline: none;
+    background: rgba(148, 163, 184, 0.16);
+    color: #1f2937;
+}
+
+.barber-card.is-status-updating .card-back-option,
+.barber-card.is-status-updating .card-back-cancel,
+.barber-card.is-status-updating .status-toggle {
+    pointer-events: none;
+    opacity: 0.6;
+}
+
+.status-toggle {
+    border: none;
+    background: none;
+    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.status-toggle:focus-visible {
+    outline: 3px solid #1d74f5;
+    outline-offset: 2px;
+}
 .barber-card:focus-visible {
     outline: 3px solid #0072ff;
     outline-offset: 2px;

@@ -21,29 +21,21 @@
   const dropIndicator = document.createElement('div');
   dropIndicator.className = 'queue-drop-indicator';
   const POINTER_DRAG_THRESHOLD = 6;
+  const flipDelegates = new WeakMap();
 
-  document.addEventListener('click', (event) => {
-    if (!event.target.closest('.status-menu') && !event.target.closest('.status-chip')) {
-      closeStatusMenu();
-    }
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeStatusMenu();
-    }
-  });
+  document.addEventListener('pointerdown', handleGlobalPointerDown, true);
+  document.addEventListener('keydown', handleGlobalKeydown, true);
 
   let timerInterval = null;
   let lastServerTime = null;
   let lastSyncTimestamp = 0;
-  let actionLock = false;
   let reorderingLock = false;
   let draggedCard = null;
   let draggedId = null;
   let dropIndex = null;
   let currentOrder = [];
-  let statusMenuOpenCardId = null;
+  let flippedCard = null;
+  let flippedCardId = null;
   let pointerDragActive = false;
   let activePointerId = null;
   let pendingPointerCard = null;
@@ -61,6 +53,7 @@
   let currentPollMs = pollMs;
 
   initDnD(listEl);
+  initFlipUI(listEl);
 
   startTimerLoop();
   (async () => {
@@ -145,6 +138,89 @@
     };
   }
 
+  function initFlipUI(root) {
+    if (!root || isViewer) {
+      return () => {};
+    }
+
+    if (flipDelegates.has(root)) {
+      return flipDelegates.get(root);
+    }
+
+    const handleClick = (event) => {
+      const statusButton = event.target.closest('.status-toggle');
+      if (statusButton && root.contains(statusButton)) {
+        if (statusButton.disabled) {
+          return;
+        }
+        const card = statusButton.closest('.barber-card');
+        if (card) {
+          event.preventDefault();
+          event.stopPropagation();
+          toggleCardFlip(card);
+        }
+        return;
+      }
+
+      const statusOption = event.target.closest('.card-back-option');
+      if (statusOption && root.contains(statusOption)) {
+        if (statusOption.disabled) {
+          return;
+        }
+        const card = statusOption.closest('.barber-card');
+        if (card) {
+          event.preventDefault();
+          event.stopPropagation();
+          handleStatusSelection(card, statusOption.dataset.status || '');
+        }
+        return;
+      }
+
+      const cancelButton = event.target.closest('.card-back-cancel');
+      if (cancelButton && root.contains(cancelButton)) {
+        if (cancelButton.disabled) {
+          return;
+        }
+        const card = cancelButton.closest('.barber-card');
+        if (card) {
+          event.preventDefault();
+          event.stopPropagation();
+          closeCardFlip(card, { applyBuffered: true });
+        }
+      }
+    };
+
+    const handleKeyDown = (event) => {
+      const statusButton = event.target.closest('.status-toggle');
+      if (!statusButton || !root.contains(statusButton) || statusButton.disabled) {
+        return;
+      }
+      const card = statusButton.closest('.barber-card');
+      if (!card) {
+        return;
+      }
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleCardFlip(card);
+      } else if (event.key === 'Escape' && isCardFlipped(card)) {
+        event.preventDefault();
+        closeCardFlip(card, { applyBuffered: true });
+      }
+    };
+
+    root.addEventListener('click', handleClick);
+    root.addEventListener('keydown', handleKeyDown);
+
+    const teardown = () => {
+      root.removeEventListener('click', handleClick);
+      root.removeEventListener('keydown', handleKeyDown);
+      flipDelegates.delete(root);
+    };
+
+    flipDelegates.set(root, teardown);
+    return teardown;
+  }
+
   function startTimerLoop() {
     if (timerInterval) {
       clearInterval(timerInterval);
@@ -154,11 +230,6 @@
 
   async function fetchBarbers(force = false) {
     if (fetchInFlight && !force) {
-      return;
-    }
-
-    if (statusMenuOpenCardId !== null && !force) {
-      console.debug('[poll] fetch skipped (status menu open)');
       return;
     }
 
@@ -181,9 +252,15 @@
 
       const payload = await response.json();
 
-      if (dragPhase !== 'idle' || isDragging) {
+      if ((dragPhase !== 'idle' || isDragging) && !force) {
         bufferedPayload = payload;
         console.debug('[dnd] payload buffered during %s phase', dragPhase);
+        return;
+      }
+
+      if (flippedCardId !== null && !force) {
+        bufferedPayload = payload;
+        console.debug('[flip] payload buffered while card %s is open', flippedCardId);
         return;
       }
 
@@ -240,18 +317,6 @@
 
       if (!card) {
         card = createCard(id);
-        if (!isViewer) {
-          card._statusEl.addEventListener('click', (event) => {
-            event.stopPropagation();
-            toggleStatusMenu(card);
-          });
-          card._statusEl.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              toggleStatusMenu(card);
-            }
-          });
-        }
       } else {
         existing.delete(id);
       }
@@ -265,6 +330,7 @@
     });
 
     listEl.replaceChildren(fragment);
+    initFlipUI(listEl);
   }
 
   function createCard(id) {
@@ -285,17 +351,29 @@
       handle.hidden = true;
     }
 
+    const card3d = document.createElement('div');
+    card3d.className = 'card-3d';
+
+    const cardInner = document.createElement('div');
+    cardInner.className = 'card-3d-inner';
+
+    const cardFront = document.createElement('div');
+    cardFront.className = 'card-face card-front';
+
     const header = document.createElement('div');
     header.className = 'barber-card__header';
 
     const nameEl = document.createElement('span');
     nameEl.className = 'barber-name';
 
-    const statusEl = document.createElement('span');
-    statusEl.className = 'status-chip';
+    const statusButton = document.createElement('button');
+    statusButton.type = 'button';
+    statusButton.className = 'status-chip status-toggle';
+    statusButton.setAttribute('aria-expanded', 'false');
+    statusButton.setAttribute('aria-haspopup', 'true');
 
     header.appendChild(nameEl);
-    header.appendChild(statusEl);
+    header.appendChild(statusButton);
 
     const meta = document.createElement('div');
     meta.className = 'barber-card__meta';
@@ -310,24 +388,75 @@
     meta.appendChild(positionEl);
     meta.appendChild(timerEl);
 
+    cardFront.appendChild(header);
+    cardFront.appendChild(meta);
+
+    const cardBack = document.createElement('div');
+    cardBack.className = 'card-face card-back';
+
+    const backTitle = document.createElement('p');
+    backTitle.className = 'card-back-title';
+    backTitle.textContent = 'Update Status';
+
+    const backOptions = document.createElement('div');
+    backOptions.className = 'card-back-options';
+
+    const statusOptions = [
+      { value: 'available', label: 'Available' },
+      { value: 'busy_walkin', label: 'Busy – Walk-In' },
+      { value: 'busy_appointment', label: 'Busy – Appointment' },
+    ];
+
+    statusOptions.forEach(({ value, label }) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.dataset.status = value;
+      btn.className = `card-back-option status-${value}`;
+      btn.textContent = label;
+      backOptions.appendChild(btn);
+    });
+
+    const cancelButton = document.createElement('button');
+    cancelButton.type = 'button';
+    cancelButton.className = 'card-back-cancel';
+    cancelButton.textContent = 'Cancel';
+
+    cardBack.appendChild(backTitle);
+    cardBack.appendChild(backOptions);
+    cardBack.appendChild(cancelButton);
+
+    cardInner.appendChild(cardFront);
+    cardInner.appendChild(cardBack);
+
+    card3d.appendChild(cardInner);
+
     card.appendChild(handle);
-    card.appendChild(header);
-    card.appendChild(meta);
+    card.appendChild(card3d);
 
     card._nameEl = nameEl;
-    card._statusEl = statusEl;
+    card._statusEl = statusButton;
     card._positionEl = positionEl;
     card._timerEl = timerEl;
     card._dragHandle = handle;
+    card._card3d = card3d;
+    card._card3dInner = cardInner;
+    card._cardFront = cardFront;
+    card._cardBack = cardBack;
+    card._statusButtons = backOptions.querySelectorAll('button[data-status]');
+    card._cancelFlipButton = cancelButton;
 
     if (isViewer) {
       card.classList.add('is-disabled');
       card.draggable = false;
-    }
-    if (!isViewer) {
+      statusButton.disabled = true;
+      card._statusButtons.forEach((btn) => {
+        btn.disabled = true;
+      });
+      cancelButton.disabled = true;
+    } else {
       card.draggable = false;
-      card._statusEl.draggable = false;
     }
+
     return card;
   }
 
@@ -357,134 +486,212 @@
       card.classList.add('is-disabled');
       card.tabIndex = -1;
       card.draggable = false;
+      if (card._statusEl) {
+        card._statusEl.disabled = true;
+        card._statusEl.tabIndex = -1;
+      }
+      if (card._statusButtons) {
+        card._statusButtons.forEach((btn) => {
+          btn.disabled = true;
+        });
+      }
+      if (card._cancelFlipButton) {
+        card._cancelFlipButton.disabled = true;
+      }
     } else {
       card.classList.remove('is-disabled');
       card.tabIndex = 0;
       card.draggable = false;
+      if (card._statusEl) {
+        card._statusEl.disabled = false;
+        card._statusEl.tabIndex = 0;
+      }
+      if (card._statusButtons) {
+        card._statusButtons.forEach((btn) => {
+          btn.disabled = false;
+        });
+      }
+      if (card._cancelFlipButton) {
+        card._cancelFlipButton.disabled = false;
+      }
+    }
+
+    if (!card._statusButtons || card._statusButtons.length === 0) {
+      card._statusButtons = card.querySelectorAll('.card-back-option');
+    }
+    if (!card._cancelFlipButton) {
+      card._cancelFlipButton = card.querySelector('.card-back-cancel');
+    }
+    if (!card._card3d) {
+      card._card3d = card.querySelector('.card-3d');
     }
 
     card._nameEl.textContent = barber.name;
     card._positionEl.textContent = `#${barber.position}`;
 
-    card._statusEl.textContent = formatStatus(barber.status);
-    card._statusEl.className = `status-chip status-${barber.status}`;
-    card._statusEl.tabIndex = isViewer ? -1 : 0;
-    card.dataset.status = barber.status;
+    if (card._statusEl) {
+      card._statusEl.textContent = formatStatus(barber.status);
+      card._statusEl.className = `status-chip status-toggle status-${barber.status}`;
+      card._statusEl.setAttribute('aria-expanded', isCardFlipped(card) ? 'true' : 'false');
+    }
 
-    buildStatusMenu(card);
+    if (card._statusButtons) {
+      card._statusButtons.forEach((btn) => {
+        if (btn.dataset.status === barber.status) {
+          btn.classList.add('is-active');
+        } else {
+          btn.classList.remove('is-active');
+        }
+      });
+    }
+
+    card.dataset.status = barber.status;
 
     if (!barber.busy_since || barber.status === 'available') {
       card._timerEl.textContent = '--:--';
     }
   }
 
-  function onCardActivate(card) {
-    if (isViewer || actionLock) {
+  function isCardFlipped(card) {
+    return !!card && !!card._card3d && card._card3d.classList.contains('is-flipped');
+  }
+
+  function toggleCardFlip(card) {
+    if (!card || isViewer) {
       return;
     }
+    if (isCardFlipped(card)) {
+      closeCardFlip(card, { applyBuffered: true });
+    } else {
+      openCardFlip(card);
+    }
+  }
 
+  function openCardFlip(card) {
+    if (!card || isViewer) {
+      return;
+    }
+    if (flippedCard && flippedCard !== card) {
+      closeCardFlip(flippedCard, { applyBuffered: false });
+    }
+    flippedCard = card;
+    flippedCardId = Number(card.dataset.id);
+    if (card._card3d) {
+      card._card3d.classList.add('is-flipped');
+    }
+    if (card._statusEl) {
+      card._statusEl.setAttribute('aria-expanded', 'true');
+    }
+    console.debug('[flip] open %s', flippedCardId);
+  }
+
+  function closeCardFlip(card, { applyBuffered = true } = {}) {
+    if (!card || !card._card3d) {
+      return;
+    }
+    card._card3d.classList.remove('is-flipped');
+    if (card._statusEl) {
+      card._statusEl.setAttribute('aria-expanded', 'false');
+    }
+    if (flippedCard === card) {
+      flippedCard = null;
+      flippedCardId = null;
+    }
+    if (applyBuffered) {
+      flushBufferedPayload();
+    }
+  }
+
+  function setStatusButtonsDisabled(card, disabled) {
+    if (!card) {
+      return;
+    }
+    if (card._statusButtons) {
+      card._statusButtons.forEach((btn) => {
+        btn.disabled = disabled;
+      });
+    }
+    if (card._cancelFlipButton) {
+      card._cancelFlipButton.disabled = disabled;
+    }
+    if (card._statusEl && !isViewer) {
+      card._statusEl.disabled = disabled;
+    }
+  }
+
+  function handleStatusSelection(card, statusValue) {
+    if (!card || isViewer) {
+      return;
+    }
+    if (!statusValue || card.dataset.status === statusValue) {
+      closeCardFlip(card, { applyBuffered: true });
+      return;
+    }
+    submitStatusChange(card, statusValue);
+  }
+
+  function submitStatusChange(card, status) {
     const id = Number(card.dataset.id);
-    const nextStatus = computeNextStatus(card);
-
-    if (!nextStatus) {
+    if (!status || Number.isNaN(id)) {
       return;
     }
 
-    actionLock = true;
-    card.classList.add('is-disabled');
+    setStatusButtonsDisabled(card, true);
+    card.classList.add('is-status-updating');
 
     fetch('/api/barbers.php?action=status', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        barber_id: id,
-        status: nextStatus,
-      }),
+      body: JSON.stringify({ barber_id: id, status }),
     })
       .then(async (response) => {
         if (!response.ok) {
-          if (response.status === 403) {
-            showAlert('You do not have permission to update statuses.', 'warn');
-          } else {
-            showAlert('Unable to update barber status. Please try again.');
-          }
-          return;
+          throw new Error('status_failed');
         }
-
         clearAlert();
         return response.json();
       })
-      .then(() => fetchBarbers())
+      .then(() => {
+        closeCardFlip(card, { applyBuffered: false });
+        bufferedPayload = null;
+        fetchBarbers(true);
+      })
       .catch((err) => {
         console.error('Status update failed', err);
-        showAlert('Status update failed. Please try again.');
+        showAlert('Unable to update barber status. Please try again.');
       })
       .finally(() => {
-        actionLock = false;
-        card.classList.remove('is-disabled');
+        card.classList.remove('is-status-updating');
+        setStatusButtonsDisabled(card, false);
       });
   }
 
-  function computeNextStatus(card) {
-    const current = card.dataset.status || 'available';
-    const lastNonAvailable = card.dataset.lastNonAvailable || null;
-
-    if (current === 'available') {
-      return lastNonAvailable === 'busy_appointment' ? 'busy_walkin' : 'busy_appointment';
+  function handleGlobalPointerDown(event) {
+    if (!flippedCard) {
+      return;
     }
-    if (current === 'busy_appointment') {
-      return 'available';
+    const targetCard = event.target.closest('.barber-card');
+    if (targetCard === flippedCard) {
+      return;
     }
-    if (current === 'busy_walkin') {
-      return 'available';
-    }
-    return 'available';
+    closeCardFlip(flippedCard, { applyBuffered: true });
   }
 
-  function buildStatusMenu(card) {
-    if (card._statusMenu) {
-      card._statusMenu.remove();
+  function handleGlobalKeydown(event) {
+    if (event.key === 'Escape' && flippedCard) {
+      event.preventDefault();
+      closeCardFlip(flippedCard, { applyBuffered: true });
     }
-
-    const currentStatus = card.dataset.status || 'available';
-
-    const menu = document.createElement('div');
-    menu.className = 'status-menu';
-    menu.tabIndex = -1;
-    menu.hidden = true;
-    menu.addEventListener('click', (event) => event.stopPropagation());
-
-    const statuses = [
-      { value: 'available', label: 'Available' },
-      { value: 'busy_appointment', label: 'Busy · Appointment' },
-      { value: 'busy_walkin', label: 'Busy · Walk-In' },
-      { value: 'inactive', label: 'Inactive' },
-    ];
-
-    statuses.forEach((status) => {
-      const option = document.createElement('button');
-      option.type = 'button';
-      option.className = 'status-menu__option';
-      option.textContent = status.label;
-      option.dataset.value = status.value;
-      if (status.value === currentStatus) {
-        option.classList.add('is-active');
-      }
-      option.addEventListener('click', () => {
-        applyStatus(card, status.value);
-        closeStatusMenu();
-      });
-      menu.appendChild(option);
-    });
-
-    card._statusMenu = menu;
-    card.appendChild(menu);
   }
 
   function startDragSession(card, handle) {
     if (!card || !listEl) {
       return false;
+    }
+
+    if (flippedCard) {
+      closeCardFlip(flippedCard, { applyBuffered: false });
     }
 
     draggedCard = card;
@@ -493,7 +700,6 @@
     const currentPosition = currentOrder.indexOf(draggedId);
     dropIndex = currentPosition === -1 ? null : currentPosition;
     queueSection.classList.add('is-reordering');
-    closeStatusMenu();
 
     const cardRect = card.getBoundingClientRect();
     const listRect = listEl.getBoundingClientRect();
@@ -692,6 +898,10 @@
   }
 
   function cleanupDraggedCardStyles(card) {
+    if (!card) {
+      return;
+    }
+    closeCardFlip(card, { applyBuffered: false });
     card.classList.remove('dragging');
     card.style.pointerEvents = '';
     card.style.position = '';
@@ -798,7 +1008,9 @@
     if (!draggedCard) {
       return;
     }
-    closeStatusMenu();
+    if (flippedCard) {
+      closeCardFlip(flippedCard, { applyBuffered: false });
+    }
     if (dropIndex === null) {
       dropIndex = currentOrder.length;
     }
@@ -907,67 +1119,8 @@
     alertEl.textContent = '';
     alertEl.removeAttribute('data-level');
   }
-  function toggleStatusMenu(card) {
-    if (isViewer) {
-      return;
-    }
-    if (card.classList.contains('status-menu-open')) {
-      closeStatusMenu();
-      return;
-    }
-    closeStatusMenu();
-    card.classList.add('status-menu-open');
-    statusMenuOpenCardId = Number(card.dataset.id);
-    if (card._statusMenu) {
-      card._statusMenu.hidden = false;
-      card._statusMenu.focus();
-    }
-  }
-
-  function closeStatusMenu() {
-    if (!listEl) {
-      return;
-    }
-    const open = listEl.querySelector('.status-menu-open');
-    if (open) {
-      open.classList.remove('status-menu-open');
-      if (open._statusMenu) {
-        open._statusMenu.hidden = true;
-      }
-    }
-    statusMenuOpenCardId = null;
-  }
 
   function applyStatus(card, status) {
-    if (isViewer) {
-      return;
-    }
-    const id = Number(card.dataset.id);
-    if (!status || Number.isNaN(id)) {
-      return;
-    }
-
-    if (status !== 'available') {
-      card.dataset.lastNonAvailable = status;
-    }
-
-    fetch('/api/barbers.php?action=status', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ barber_id: id, status }),
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error('status_failed');
-        }
-        clearAlert();
-        return response.json();
-      })
-      .then(() => fetchBarbers())
-      .catch((err) => {
-        console.error('Status update failed', err);
-        showAlert('Unable to update barber status. Please try again.');
-      });
+    submitStatusChange(card, status);
   }
 })();
