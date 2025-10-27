@@ -29,7 +29,7 @@ try {
         <p class="queue-note">You are in view-only mode. Status toggles and reordering are disabled.</p>
     <?php endif; ?>
     <div id="queue-alert" class="queue-alert" hidden></div>
-    <div id="barber-list" class="queue-grid">
+    <div id="barber-list" class="queue-grid queue-root">
         <p class="queue-empty">Loading barbers…</p>
     </div>
 </section>
