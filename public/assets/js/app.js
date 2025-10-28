@@ -22,17 +22,8 @@
   dropIndicator.className = 'queue-drop-indicator';
   const POINTER_DRAG_THRESHOLD = 6;
 
-  document.addEventListener('click', (event) => {
-    if (!event.target.closest('.status-menu') && !event.target.closest('.status-chip')) {
-      closeStatusMenu();
-    }
-  });
-
-  document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeStatusMenu();
-    }
-  });
+  document.addEventListener('pointerdown', handleGlobalPointerDown, true);
+  document.addEventListener('keydown', handleGlobalKeydown, true);
 
   let timerInterval = null;
   let lastServerTime = null;
@@ -43,7 +34,6 @@
   let draggedId = null;
   let dropIndex = null;
   let currentOrder = [];
-  let statusMenuOpenCardId = null;
   let pointerDragActive = false;
   let activePointerId = null;
   let pendingPointerCard = null;
@@ -51,6 +41,9 @@
   let pointerStartX = 0;
   let pointerStartY = 0;
   let draggedHandle = null;
+  let flippedCard = null;
+  let flippedCardId = null;
+  let flipTeardown = null;
 
   let pollIntervalId = null;
   let resumeTimeoutId = null;
@@ -116,12 +109,12 @@
   }
 
   function flushBufferedPayload() {
-    if (!bufferedPayload) {
+    if (!bufferedPayload || flippedCard) {
       return;
     }
     const payload = bufferedPayload;
     bufferedPayload = null;
-    console.debug('[dnd] applying buffered payload');
+    console.debug('[render] applying buffered payload');
     applyPayload(payload);
   }
 
@@ -135,6 +128,7 @@
       if (!handle || !root.contains(handle)) {
         return;
       }
+      closeFlips();
       handleDragPointerDown(handle, event);
     };
 
@@ -157,11 +151,6 @@
       return;
     }
 
-    if (statusMenuOpenCardId !== null && !force) {
-      console.debug('[poll] fetch skipped (status menu open)');
-      return;
-    }
-
     if ((isDragging || dragPhase !== 'idle') && !force) {
       console.debug('[poll] fetch skipped during drag');
       return;
@@ -181,9 +170,9 @@
 
       const payload = await response.json();
 
-      if (dragPhase !== 'idle' || isDragging) {
+      if (dragPhase !== 'idle' || isDragging || flippedCard) {
         bufferedPayload = payload;
-        console.debug('[dnd] payload buffered during %s phase', dragPhase);
+        console.debug('[poll] payload buffered (%s)', flippedCard ? 'flip active' : dragPhase);
         return;
       }
 
@@ -229,6 +218,9 @@
 
     if (barbers.length === 0) {
       listEl.innerHTML = '<p class="queue-empty">No barbers in queue yet.</p>';
+      teardownFlipUI();
+      flippedCard = null;
+      flippedCardId = null;
       return;
     }
 
@@ -240,18 +232,6 @@
 
       if (!card) {
         card = createCard(id);
-        if (!isViewer) {
-          card._statusEl.addEventListener('click', (event) => {
-            event.stopPropagation();
-            toggleStatusMenu(card);
-          });
-          card._statusEl.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter' || event.key === ' ') {
-              event.preventDefault();
-              toggleStatusMenu(card);
-            }
-          });
-        }
       } else {
         existing.delete(id);
       }
@@ -261,10 +241,24 @@
     });
 
     existing.forEach((card) => {
+      if (card === flippedCard) {
+        flippedCard = null;
+        flippedCardId = null;
+      }
       card.remove();
     });
 
+    teardownFlipUI();
     listEl.replaceChildren(fragment);
+    initFlipUI(listEl);
+
+    if (flippedCardId !== null) {
+      const possible = listEl.querySelector(`.barber-card[data-id="${flippedCardId}"] .card-3d`);
+      if (!possible) {
+        flippedCard = null;
+        flippedCardId = null;
+      }
+    }
   }
 
   function createCard(id) {
@@ -285,20 +279,37 @@
       handle.hidden = true;
     }
 
+    const card3d = document.createElement('div');
+    card3d.className = 'card-3d';
+
+    const cardInner = document.createElement('div');
+    cardInner.className = 'card-3d-inner';
+
+    const cardFront = document.createElement('div');
+    cardFront.className = 'card-face card-front';
+
+    const frontContent = document.createElement('div');
+    frontContent.className = 'card-front-content';
+
     const header = document.createElement('div');
     header.className = 'barber-card__header';
 
     const nameEl = document.createElement('span');
     nameEl.className = 'barber-name';
 
-    const statusEl = document.createElement('span');
-    statusEl.className = 'status-chip';
+    const statusToggle = document.createElement('button');
+    statusToggle.type = 'button';
+    statusToggle.className = 'status-chip status-toggle';
+    statusToggle.setAttribute('aria-haspopup', 'true');
+    statusToggle.setAttribute('aria-expanded', 'false');
+    statusToggle.tabIndex = isViewer ? -1 : 0;
 
     header.appendChild(nameEl);
-    header.appendChild(statusEl);
+    header.appendChild(statusToggle);
 
     const meta = document.createElement('div');
     meta.className = 'barber-card__meta';
+    meta.classList.add('front-meta');
 
     const positionEl = document.createElement('span');
     positionEl.className = 'barber-position';
@@ -310,24 +321,71 @@
     meta.appendChild(positionEl);
     meta.appendChild(timerEl);
 
+    frontContent.appendChild(header);
+    frontContent.appendChild(meta);
+    cardFront.appendChild(frontContent);
+
+    const cardBack = document.createElement('div');
+    cardBack.className = 'card-face card-back';
+
+    const statusPanel = document.createElement('div');
+    statusPanel.className = 'status-panel';
+
+    const backTitle = document.createElement('div');
+    backTitle.className = 'status-title';
+    backTitle.textContent = 'Update Status';
+
+    const statusOptions = document.createElement('div');
+    statusOptions.className = 'status-options';
+
+    const statuses = [
+      { value: 'available', label: 'Available' },
+      { value: 'busy_walkin', label: 'Busy · Walk-In' },
+      { value: 'busy_appointment', label: 'Busy · Appointment' },
+    ];
+
+    statuses.forEach(({ value, label }) => {
+      const optionBtn = document.createElement('button');
+      optionBtn.type = 'button';
+      optionBtn.dataset.status = value;
+      optionBtn.className = `btn status-option status-${value}`;
+      optionBtn.textContent = label;
+      statusOptions.appendChild(optionBtn);
+    });
+
+    statusPanel.appendChild(backTitle);
+    statusPanel.appendChild(statusOptions);
+    cardBack.appendChild(statusPanel);
+
+    cardInner.appendChild(cardFront);
+    cardInner.appendChild(cardBack);
+    card3d.appendChild(cardInner);
+
     card.appendChild(handle);
-    card.appendChild(header);
-    card.appendChild(meta);
+    card.appendChild(card3d);
 
     card._nameEl = nameEl;
-    card._statusEl = statusEl;
+    card._statusToggle = statusToggle;
     card._positionEl = positionEl;
     card._timerEl = timerEl;
     card._dragHandle = handle;
+    card._card3d = card3d;
+    card._cardInner = cardInner;
+    card._cardFront = cardFront;
+    card._cardBack = cardBack;
+    card._statusButtons = statusOptions.querySelectorAll('button[data-status]');
 
     if (isViewer) {
       card.classList.add('is-disabled');
       card.draggable = false;
-    }
-    if (!isViewer) {
+      statusToggle.disabled = true;
+      card._statusButtons.forEach((btn) => {
+        btn.disabled = true;
+      });
+    } else {
       card.draggable = false;
-      card._statusEl.draggable = false;
     }
+
     return card;
   }
 
@@ -363,123 +421,52 @@
       card.draggable = false;
     }
 
-    card._nameEl.textContent = barber.name;
-    card._positionEl.textContent = `#${barber.position}`;
+    if (card._nameEl) {
+      card._nameEl.textContent = barber.name;
+    }
+    if (card._positionEl) {
+      card._positionEl.textContent = `#${barber.position}`;
+    }
 
-    card._statusEl.textContent = formatStatus(barber.status);
-    card._statusEl.className = `status-chip status-${barber.status}`;
-    card._statusEl.tabIndex = isViewer ? -1 : 0;
+    if (card._statusToggle) {
+      card._statusToggle.textContent = formatStatus(barber.status);
+      card._statusToggle.className = `status-chip status-toggle status-${barber.status}`;
+      card._statusToggle.tabIndex = isViewer ? -1 : 0;
+      card._statusToggle.disabled = isViewer;
+      const expanded = card._card3d?.classList.contains('is-flipped');
+      card._statusToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    }
+
+    if (card._statusButtons) {
+      card._statusButtons.forEach((btn) => {
+        btn.disabled = isViewer;
+        if (btn.dataset.status === barber.status) {
+          btn.classList.add('is-active');
+        } else {
+          btn.classList.remove('is-active');
+        }
+      });
+    }
+
     card.dataset.status = barber.status;
 
-    buildStatusMenu(card);
-
     if (!barber.busy_since || barber.status === 'available') {
-      card._timerEl.textContent = '--:--';
-    }
-  }
-
-  function onCardActivate(card) {
-    if (isViewer || actionLock) {
-      return;
-    }
-
-    const id = Number(card.dataset.id);
-    const nextStatus = computeNextStatus(card);
-
-    if (!nextStatus) {
-      return;
-    }
-
-    actionLock = true;
-    card.classList.add('is-disabled');
-
-    fetch('/api/barbers.php?action=status', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        barber_id: id,
-        status: nextStatus,
-      }),
-    })
-      .then(async (response) => {
-        if (!response.ok) {
-          if (response.status === 403) {
-            showAlert('You do not have permission to update statuses.', 'warn');
-          } else {
-            showAlert('Unable to update barber status. Please try again.');
-          }
-          return;
-        }
-
-        clearAlert();
-        return response.json();
-      })
-      .then(() => fetchBarbers())
-      .catch((err) => {
-        console.error('Status update failed', err);
-        showAlert('Status update failed. Please try again.');
-      })
-      .finally(() => {
-        actionLock = false;
-        card.classList.remove('is-disabled');
-      });
-  }
-
-  function computeNextStatus(card) {
-    const current = card.dataset.status || 'available';
-    const lastNonAvailable = card.dataset.lastNonAvailable || null;
-
-    if (current === 'available') {
-      return lastNonAvailable === 'busy_appointment' ? 'busy_walkin' : 'busy_appointment';
-    }
-    if (current === 'busy_appointment') {
-      return 'available';
-    }
-    if (current === 'busy_walkin') {
-      return 'available';
-    }
-    return 'available';
-  }
-
-  function buildStatusMenu(card) {
-    if (card._statusMenu) {
-      card._statusMenu.remove();
-    }
-
-    const currentStatus = card.dataset.status || 'available';
-
-    const menu = document.createElement('div');
-    menu.className = 'status-menu';
-    menu.tabIndex = -1;
-    menu.hidden = true;
-    menu.addEventListener('click', (event) => event.stopPropagation());
-
-    const statuses = [
-      { value: 'available', label: 'Available' },
-      { value: 'busy_appointment', label: 'Busy · Appointment' },
-      { value: 'busy_walkin', label: 'Busy · Walk-In' },
-      { value: 'inactive', label: 'Inactive' },
-    ];
-
-    statuses.forEach((status) => {
-      const option = document.createElement('button');
-      option.type = 'button';
-      option.className = 'status-menu__option';
-      option.textContent = status.label;
-      option.dataset.value = status.value;
-      if (status.value === currentStatus) {
-        option.classList.add('is-active');
+      if (card._timerEl) {
+        card._timerEl.textContent = '--:--';
       }
-      option.addEventListener('click', () => {
-        applyStatus(card, status.value);
-        closeStatusMenu();
-      });
-      menu.appendChild(option);
-    });
-
-    card._statusMenu = menu;
-    card.appendChild(menu);
+    } else {
+      const busyDate = new Date(barber.busy_since);
+      if (Number.isNaN(busyDate.getTime())) {
+        if (card._timerEl) {
+          card._timerEl.textContent = '--:--';
+        }
+      } else {
+        const elapsed = lastServerTime ? Math.max(0, lastServerTime.getTime() - busyDate.getTime()) : 0;
+        if (card._timerEl) {
+          card._timerEl.textContent = formatDuration(elapsed);
+        }
+      }
+    }
   }
 
   function startDragSession(card, handle) {
@@ -487,13 +474,14 @@
       return false;
     }
 
+    closeFlips();
+
     draggedCard = card;
     draggedHandle = handle || card._dragHandle || null;
     draggedId = Number(card.dataset.id);
     const currentPosition = currentOrder.indexOf(draggedId);
     dropIndex = currentPosition === -1 ? null : currentPosition;
     queueSection.classList.add('is-reordering');
-    closeStatusMenu();
 
     const cardRect = card.getBoundingClientRect();
     const listRect = listEl.getBoundingClientRect();
@@ -798,7 +786,8 @@
     if (!draggedCard) {
       return;
     }
-    closeStatusMenu();
+
+    closeFlips();
     if (dropIndex === null) {
       dropIndex = currentOrder.length;
     }
@@ -831,8 +820,6 @@
 
     finalizeReorder(order);
   }
-
-  // getDragAfterElement no longer used; logic moved into updateDropIndicator
 
   function updateTimers() {
     if (!lastServerTime) {
@@ -907,48 +894,143 @@
     alertEl.textContent = '';
     alertEl.removeAttribute('data-level');
   }
-  function toggleStatusMenu(card) {
-    if (isViewer) {
+
+  function toggleFlip(card) {
+    if (!card || isViewer) {
       return;
     }
-    if (card.classList.contains('status-menu-open')) {
-      closeStatusMenu();
+    if (!card._card3d) {
       return;
     }
-    closeStatusMenu();
-    card.classList.add('status-menu-open');
-    statusMenuOpenCardId = Number(card.dataset.id);
-    if (card._statusMenu) {
-      card._statusMenu.hidden = false;
-      card._statusMenu.focus();
+
+    const alreadyOpen = flippedCard && flippedCard === card;
+    closeFlips();
+
+    if (alreadyOpen) {
+      return;
     }
+
+    card._card3d.classList.add('is-flipped');
+    if (card._statusToggle) {
+      card._statusToggle.setAttribute('aria-expanded', 'true');
+    }
+    flippedCard = card;
+    flippedCardId = Number(card.dataset.id) || null;
   }
 
-  function closeStatusMenu() {
-    if (!listEl) {
+  function closeFlips({ restoreFocus = false } = {}) {
+    if (!flippedCard) {
       return;
     }
-    const open = listEl.querySelector('.status-menu-open');
-    if (open) {
-      open.classList.remove('status-menu-open');
-      if (open._statusMenu) {
-        open._statusMenu.hidden = true;
+
+    if (flippedCard._card3d) {
+      flippedCard._card3d.classList.remove('is-flipped');
+    }
+    if (flippedCard._statusToggle) {
+      flippedCard._statusToggle.setAttribute('aria-expanded', 'false');
+      if (restoreFocus) {
+        flippedCard._statusToggle.focus({ preventScroll: true });
       }
     }
-    statusMenuOpenCardId = null;
+    flippedCard = null;
+    flippedCardId = null;
+    flushBufferedPayload();
   }
 
-  function applyStatus(card, status) {
-    if (isViewer) {
+  function handleGlobalPointerDown(event) {
+    if (!flippedCard) {
       return;
     }
+    if (event.target && flippedCard.contains(event.target)) {
+      return;
+    }
+    closeFlips();
+  }
+
+  function handleGlobalKeydown(event) {
+    if (event.key === 'Escape') {
+      closeFlips({ restoreFocus: true });
+    }
+  }
+
+  function initFlipUI(root) {
+    teardownFlipUI();
+    if (!root || isViewer) {
+      return;
+    }
+
+    const handleClick = (event) => {
+      const toggle = event.target.closest('.status-toggle');
+      if (toggle && root.contains(toggle)) {
+        event.preventDefault();
+        event.stopPropagation();
+        const card = toggle.closest('.barber-card');
+        toggleFlip(card);
+        return;
+      }
+
+      const option = event.target.closest('.status-option');
+      if (option && root.contains(option)) {
+        event.preventDefault();
+        const card = option.closest('.barber-card');
+        if (!card || card.classList.contains('is-disabled')) {
+          return;
+        }
+        submitStatus(card, option.dataset.status);
+      }
+    };
+
+    const handleFocusOut = (event) => {
+      if (!flippedCard) {
+        return;
+      }
+      if (event.relatedTarget && flippedCard.contains(event.relatedTarget)) {
+        return;
+      }
+      if (event.target && flippedCard.contains(event.target)) {
+        requestAnimationFrame(() => closeFlips());
+      }
+    };
+
+    root.addEventListener('click', handleClick);
+    root.addEventListener('focusout', handleFocusOut);
+
+    flipTeardown = () => {
+      root.removeEventListener('click', handleClick);
+      root.removeEventListener('focusout', handleFocusOut);
+    };
+  }
+
+  function teardownFlipUI() {
+    if (typeof flipTeardown === 'function') {
+      flipTeardown();
+      flipTeardown = null;
+    }
+  }
+
+  function submitStatus(card, status) {
+    if (isViewer || !status || actionLock) {
+      return;
+    }
+
     const id = Number(card.dataset.id);
-    if (!status || Number.isNaN(id)) {
+    if (Number.isNaN(id)) {
       return;
     }
 
     if (status !== 'available') {
       card.dataset.lastNonAvailable = status;
+    }
+
+    actionLock = true;
+    card.classList.add('is-disabled');
+
+    const buttons = card._statusButtons ? Array.from(card._statusButtons) : [];
+    buttons.forEach((btn) => {
+      btn.disabled = true;
+    });
+    if (card._statusToggle) {
+      card._statusToggle.disabled = true;
     }
 
     fetch('/api/barbers.php?action=status', {
@@ -964,10 +1046,23 @@
         clearAlert();
         return response.json();
       })
-      .then(() => fetchBarbers())
+      .then(() => {
+        closeFlips({ restoreFocus: true });
+        fetchBarbers(true);
+      })
       .catch((err) => {
         console.error('Status update failed', err);
         showAlert('Unable to update barber status. Please try again.');
+      })
+      .finally(() => {
+        actionLock = false;
+        card.classList.remove('is-disabled');
+        buttons.forEach((btn) => {
+          btn.disabled = isViewer;
+        });
+        if (card._statusToggle) {
+          card._statusToggle.disabled = isViewer;
+        }
       });
   }
 })();
