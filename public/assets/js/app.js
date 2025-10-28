@@ -338,13 +338,14 @@
       { value: 'available', label: 'Available' },
       { value: 'busy_walkin', label: 'Busy · Walk-In' },
       { value: 'busy_appointment', label: 'Busy · Appointment' },
+      { value: 'inactive', label: 'Inactive' },
     ];
 
     statuses.forEach(({ value, label }) => {
       const optionBtn = document.createElement('button');
       optionBtn.type = 'button';
       optionBtn.dataset.status = value;
-      optionBtn.className = `btn status-option status-${value}`;
+      optionBtn.className = `status-chip status-option status-${value}`;
       optionBtn.textContent = label;
       statusOptions.appendChild(optionBtn);
     });

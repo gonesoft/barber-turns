@@ -565,21 +565,11 @@ section[class^="view-"] h2 {
     align-items: stretch;
 }
 
-.status-title {
-    color: #111;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    font-weight: 700;
-    text-align: center;
-    font-size: clamp(14px, 2.1vw, 18px);
-    margin-bottom: clamp(10px, 1.2vw, 14px);
-    white-space: normal;
-}
-
 .status-panel {
-    width: min(88%, 420px);
+    width: 100%;
+    max-width: 420px;
     margin: 0 auto;
-    padding: clamp(12px, 1.4vw, 18px);
+    padding: clamp(12px, 1.2vw, 16px);
     border-radius: 12px;
     box-sizing: border-box;
 }
@@ -587,18 +577,25 @@ section[class^="view-"] h2 {
 .status-options {
     display: flex;
     flex-direction: column;
-    gap: clamp(10px, 1.4vw, 16px);
+    align-items: center;
+    gap: clamp(8px, 1.2vw, 14px);
 }
 
-.status-options .btn {
-    width: 100%;
-    max-width: 320px;
+.status-options .status-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    min-width: clamp(120px, 55%, 220px);
+    max-width: 100%;
+    padding: 0.35rem 0.75rem;
     margin: 0 auto;
     border-radius: 999px;
-    border-width: 1.5px;
+    font-size: 0.75rem;
     font-weight: 600;
-    letter-spacing: 0.03em;
     text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
 }
 
 .barber-card,
