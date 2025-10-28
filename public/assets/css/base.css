@@ -402,7 +402,8 @@ section[class^="view-"] h2 {
 
 .queue-root,
 .barber-card,
-.drag-handle {
+.drag-handle,
+.card-back {
     -webkit-user-select: none;
             user-select: none;
     -webkit-touch-callout: none;
@@ -414,13 +415,15 @@ section[class^="view-"] h2 {
 
 .barber-card {
     position: relative;
-    border-radius: 12px;
+    --card-h: clamp(120px, 12vh, 180px);
+    height: var(--card-h);
+    border-radius: 16px;
     border-left: 6px solid transparent;
     cursor: pointer;
     transition: transform 0.15s ease;
     width: 100%;
     max-width: 520px;
-    overflow: visible;
+    overflow: hidden;
     z-index: 1;
     display: grid;
     grid-template-columns: auto 1fr;
@@ -475,43 +478,53 @@ section[class^="view-"] h2 {
     position: relative;
     grid-column: 2;
     width: 100%;
+    height: 100%;
     perspective: 1000px;
+    transform: translateZ(0);
+    border-radius: inherit;
+    overflow: hidden;
 }
 
 .card-3d-inner {
     position: relative;
     width: 100%;
-    min-height: 100%;
+    height: 100%;
     transition: transform 300ms ease;
     transform-style: preserve-3d;
 }
 
 .card-face {
-    position: relative;
-    width: 100%;
-    min-height: 100%;
-    padding: 0.85rem 1.1rem;
-    border-radius: 12px;
-    background: #ffffff;
-    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-    backface-visibility: hidden;
-}
-
-.card-face.card-front {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-}
-
-.card-face.card-back {
     position: absolute;
     inset: 0;
-    transform: rotateY(180deg);
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 1rem;
-    padding: 1rem 1.25rem;
+    align-items: center;
+    padding: clamp(12px, 1.5vw, 24px);
+    box-sizing: border-box;
+    border-radius: inherit;
+    background: #ffffff;
+    color: #0f172a;
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.1);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+}
+
+.card-front {
+    transform: rotateY(0deg);
+    align-items: stretch;
+    justify-content: space-between;
+    gap: clamp(8px, 1.2vw, 16px);
+}
+
+.card-back {
+    transform: rotateY(180deg);
+    background: rgba(0, 0, 0, 0.55);
+    color: #ffffff;
+    text-align: center;
+    gap: clamp(10px, 1.6vw, 20px);
 }
 
 .card-3d.is-flipped .card-3d-inner {
@@ -527,8 +540,11 @@ section[class^="view-"] h2 {
 }
 
 .card-back-options {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 0.75rem;
+    width: min(92%, 560px);
+    margin: 0 auto;
 }
 
 .card-back-option {
@@ -538,8 +554,8 @@ section[class^="view-"] h2 {
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    color: #0f172a;
-    background: #f1f5f9;
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.18);
     transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
 }
 
@@ -547,51 +563,33 @@ section[class^="view-"] h2 {
 .card-back-option:focus-visible {
     outline: none;
     transform: translateY(-1px);
-    background: #e2e8f0;
+    background: rgba(255, 255, 255, 0.28);
 }
 
 .card-back-option.is-active {
-    background: #1d74f5;
-    color: #ffffff;
-}
-
-.card-back-option.status-available {
-    background: rgba(14, 159, 110, 0.12);
-    color: #046b35;
-}
-
-.card-back-option.status-busy_walkin {
-    background: rgba(220, 38, 38, 0.12);
-    color: #aa1d1d;
-}
-
-.card-back-option.status-busy_appointment {
-    background: rgba(245, 158, 11, 0.12);
-    color: #9c5a00;
+    background: #ffffff;
+    color: #0f172a;
 }
 
 .card-back-option.status-available.is-active {
-    background: #0e9f6e;
-    color: #ffffff;
+    color: #0e9f6e;
 }
 
 .card-back-option.status-busy_walkin.is-active {
-    background: #dc2626;
-    color: #ffffff;
+    color: #dc2626;
 }
 
 .card-back-option.status-busy_appointment.is-active {
-    background: #f59e0b;
-    color: #1f2937;
+    color: #f59e0b;
 }
 
 .card-back-cancel {
     align-self: center;
     padding: 0.5rem 1.4rem;
     border-radius: 999px;
-    border: 1px solid #94a3b8;
-    background: transparent;
-    color: #475569;
+    border: 1px solid rgba(255, 255, 255, 0.32);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
     font-weight: 600;
     cursor: pointer;
     transition: background 0.2s ease, color 0.2s ease;
@@ -600,8 +598,8 @@ section[class^="view-"] h2 {
 .card-back-cancel:hover,
 .card-back-cancel:focus-visible {
     outline: none;
-    background: rgba(148, 163, 184, 0.16);
-    color: #1f2937;
+    background: rgba(255, 255, 255, 0.24);
+    color: #ffffff;
 }
 
 .barber-card.is-status-updating .card-back-option,
