@@ -575,21 +575,19 @@ section[class^="view-"] h2 {
 }
 
 .status-options {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: clamp(8px, 1.2vw, 14px);
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 1.2vw, 14px) clamp(10px, 1.6vw, 18px);
+    justify-items: center;
 }
 
 .status-options .status-chip {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: auto;
-    min-width: clamp(120px, 55%, 220px);
-    max-width: 100%;
-    padding: 0.35rem 0.75rem;
-    margin: 0 auto;
+    width: 100%;
+    max-width: 180px;
+    padding: 0.4rem 0.75rem;
     border-radius: 999px;
     font-size: 0.75rem;
     font-weight: 600;
