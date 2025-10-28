@@ -402,20 +402,28 @@ section[class^="view-"] h2 {
 
 .queue-root,
 .barber-card,
+.drag-handle {
+    -webkit-user-select: none;
+            user-select: none;
+    -webkit-touch-callout: none;
+}
 
 .view-queue .card-front-content {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center;
-    gap: clamp(12px, 2vw, 24px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: clamp(14px, 2.4vw, 28px);
+    height: 100%;
+    width: 100%;
 }
 
 .view-queue .barber-card__header {
     display: flex;
-    align-items: baseline;
+    align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: clamp(10px, 1.6vw, 18px);
+    gap: clamp(12px, 2vw, 24px);
+    width: 100%;
 }
 
 .view-queue .barber-card__header .status-toggle {
@@ -424,19 +432,20 @@ section[class^="view-"] h2 {
 
 .view-queue .front-meta {
     display: grid;
-    grid-auto-flow: row;
-    justify-items: end;
-    row-gap: clamp(6px, 1vw, 10px);
-    text-align: right;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(8px, 1.4vw, 18px);
+    width: 100%;
+    align-items: baseline;
 }
 
-.view-queue .barber-position {
+.view-queue .front-meta .barber-position {
+    justify-self: flex-start;
     font-weight: 600;
 }
-.drag-handle {
-    -webkit-user-select: none;
-            user-select: none;
-    -webkit-touch-callout: none;
+
+.view-queue .front-meta .barber-timer {
+    justify-self: flex-end;
+    font-variant-numeric: tabular-nums;
 }
 
 .view-queue.is-viewer .barber-card {
@@ -535,8 +544,11 @@ section[class^="view-"] h2 {
     transform: rotateY(180deg);
     background: #fff;
     color: #111;
-    padding: clamp(12px, 1.6vw, 20px);
+    padding: clamp(12px, 1.4vw, 18px);
     text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .card-3d.is-flipped .card-3d-inner {
@@ -565,9 +577,9 @@ section[class^="view-"] h2 {
 }
 
 .status-panel {
-    width: min(90%, 520px);
+    width: min(88%, 420px);
     margin: 0 auto;
-    padding: clamp(12px, 1.6vw, 20px);
+    padding: clamp(12px, 1.4vw, 18px);
     border-radius: 12px;
     box-sizing: border-box;
 }
@@ -575,13 +587,18 @@ section[class^="view-"] h2 {
 .status-options {
     display: flex;
     flex-direction: column;
-    gap: clamp(8px, 1.2vw, 12px);
+    gap: clamp(10px, 1.4vw, 16px);
 }
 
 .status-options .btn {
     width: 100%;
-    max-width: 520px;
+    max-width: 320px;
     margin: 0 auto;
+    border-radius: 999px;
+    border-width: 1.5px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
 }
 
 .barber-card,

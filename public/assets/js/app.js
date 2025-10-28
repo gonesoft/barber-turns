@@ -331,10 +331,6 @@
     const statusPanel = document.createElement('div');
     statusPanel.className = 'status-panel';
 
-    const backTitle = document.createElement('div');
-    backTitle.className = 'status-title';
-    backTitle.textContent = 'Update Status';
-
     const statusOptions = document.createElement('div');
     statusOptions.className = 'status-options';
 
@@ -353,7 +349,6 @@
       statusOptions.appendChild(optionBtn);
     });
 
-    statusPanel.appendChild(backTitle);
     statusPanel.appendChild(statusOptions);
     cardBack.appendChild(statusPanel);
 
