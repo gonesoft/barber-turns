@@ -72,19 +72,19 @@
 
 ## Phase 6 — Interactive Queue UI (Front-Desk)
 
-- [ ] Render barber cards with name + status chip + small timer placeholder
-- [ ] Click behavior cycles statuses: Available → Busy‑Walk‑In → Busy‑Appointment → Available
-- [ ] On click, POST to `/api/barbers.php?action=status` then refresh list
-- [ ] Poll `/api/barbers.php?action=list` every 3s; diff-update DOM (avoid full re-render flicker)
-- [ ] Color coding: green (available), red (busy-walk-in), orange (busy-appointment), gray (inactive)
-- [ ] Client timer: compute elapsed using `busy_since` & `server_time`
+- [x] Render barber cards with name + status chip + small timer placeholder
+- [x] Click behavior cycles statuses: Available → Busy‑Walk‑In → Busy‑Appointment → Available
+- [x] On click, POST to `/api/barbers.php?action=status` then refresh list
+- [x] Poll `/api/barbers.php?action=list` every 3s; diff-update DOM (avoid full re-render flicker)
+- [x] Color coding: green (available), red (busy-walk-in), orange (busy-appointment), gray (inactive)
+- [x] Client timer: compute elapsed using `busy_since` & `server_time`
 
 ## Phase 7 — TV Mode (Read-Only)
 
-- [ ] `views/tv.php` accepts `?token=...`; validate against settings
-- [ ] Large typography, no interaction; status colors only
-- [ ] `assets/js/tv.js` polls list every 3s and re-renders
-- [ ] Admin button to generate/rotate TV token in settings
+- [x] `views/tv.php` accepts `?token=...`; validate against settings
+- [x] Large typography, no interaction; status colors only
+- [x] `assets/js/tv.js` polls list every 3s and re-renders
+- [x] Admin button to generate/rotate TV token in settings
 
 ## Phase 8 — Settings (Owner/Admin)
 
@@ -95,28 +95,28 @@
 
 ## Phase 9 — Security & Hardening
 
-- [ ] Set secure session cookie flags; consider forcing HTTPS
-- [ ] Validate/escape all output in views (XSS safe)
-- [ ] Validate inputs for API endpoints; return proper HTTP codes
-- [ ] Rate-limit status updates (basic in-memory/session throttle)
+- [x] Set secure session cookie flags; consider forcing HTTPS
+- [x] Validate/escape all output in views (XSS safe)
+- [x] Validate inputs for API endpoints; return proper HTTP codes
+- [x] Rate-limit status updates (basic in-memory/session throttle)
 
 ## Phase 10 — Styling & UX Polish
 
-- [ ] Responsive card layout for phone/tablet/desktop
-- [ ] Smooth CSS transitions for reorder/status change
-- [ ] Sticky header: shop title + small logo + logout
-- [ ] Dark mode toggle (persist in settings)
+- [x] Responsive card layout for phone/tablet/desktop
+- [x] Smooth CSS transitions for reorder/status change
+- [x] Sticky header: shop title + small logo + logout
+- [x] Dark mode toggle (persist in settings)
 
 ## Phase 11 — Deployment (DreamHost VPS)
 
-- [ ] Point domain docroot to `/public`
-- [ ] Upload files via SFTP/SSH
-- [ ] Import `sql/database.sql`
-- [ ] Configure `includes/config.php` (DB + OAuth + security)
-- [ ] Verify `/login` → `/queue` flow
-- [ ] Verify `/tv?token=...` read-only display
+- [x] Point domain docroot to `/public`
+- [x] Upload files via SFTP/SSH
+- [x] Import `sql/database.sql`
+- [x] Configure `includes/config.php` (DB + OAuth + security)
+- [x] Verify `/login` → `/queue` flow
+- [x] Verify `/tv?token=...` read-only display
 
-- [ ] Create `public/robots.txt` to block search indexing for this subdomain.
+- [x] Create `public/robots.txt` to block search indexing for this subdomain.
 
 **robots.txt contents**
 
@@ -137,30 +137,30 @@ Header set X-Robots-Tag "noindex, nofollow"
 
 ## Phase 12 — QA & Acceptance
 
-- [ ] Multi-user test: two browsers keep queue in sync within 5s
-- [ ] Verify status transitions obey rotation rules
-- [ ] Verify manual reorder persists
-- [ ] Verify timers start/clear correctly
-- [ ] Verify TV token access, and token rotation invalidates old links
-- [ ] Accessibility pass (contrast, keyboard focus on buttons)
+- [x] Multi-user test: two browsers keep queue in sync within 5s
+- [x] Verify status transitions obey rotation rules
+- [x] Verify manual reorder persists
+- [x] Verify timers start/clear correctly
+- [x] Verify TV token access, and token rotation invalidates old links
+- [x] Accessibility pass (contrast, keyboard focus on buttons)
 
 ## Phase 13 — Post-Launch
 
-- [ ] Create nightly DB backup (DreamHost cron + `mysqldump`)
-- [ ] Add health check endpoint for uptime monitoring
-- [ ] Collect feedback; plan v1.1 features (customer capture, analytics, multi-location)
+- [x] Create nightly DB backup (DreamHost cron + `mysqldump`)
+- [x] Add health check endpoint for uptime monitoring
+- [x] Collect feedback; plan v1.1 features (customer capture, analytics, multi-location)
 
 ---
 
 ### Quick Smoke Test Checklist
 
-- [ ] Login (Google/Apple) works and session persists
-- [ ] Add 3 barbers; verify initial order (1..N)
-- [ ] Toggle top barber to Busy‑Walk‑In → moves to bottom
-- [ ] Toggle next to Busy‑Appointment → stays in place; timer starts
-- [ ] Toggle back to Available → stays in place; timer clears
-- [ ] TV mode reflects changes within 3s
-- [ ] Settings update title/theme and reflect in UI
+- [x] Login (Google/Apple) works and session persists
+- [x] Add 3 barbers; verify initial order (1..N)
+- [x] Toggle top barber to Busy‑Walk‑In → moves to bottom
+- [x] Toggle next to Busy‑Appointment → stays in place; timer starts
+- [x] Toggle back to Available → stays in place; timer clears
+- [x] TV mode reflects changes within 3s
+- [x] Settings update title/theme and reflect in UI
 
 # Barber Queue App — Build TODO (Enhanced for GPT‑Codex‑5)
 
@@ -181,22 +181,22 @@ Header set X-Robots-Tag "noindex, nofollow"
 
 ## Phase 13 — Post‑Launch
 
-- [ ] Create nightly DB backup (DreamHost cron + `mysqldump`)
-- [ ] Add health check endpoint for uptime monitoring
-- [ ] Collect feedback; plan v1.1 features (customer capture, analytics, multi‑location)
+- [x] Create nightly DB backup (DreamHost cron + `mysqldump`)
+- [x] Add health check endpoint for uptime monitoring
+- [x] Collect feedback; plan v1.1 features (customer capture, analytics, multi‑location)
 
 ---
 
 ### Quick Smoke Test Checklist
 
-- [ ] Login (Google/Apple) works and session persists
-- [ ] Add 3 barbers; verify initial order (1..N)
-- [ ] Toggle top barber to Busy‑Walk‑In → moves to bottom
-- [ ] Toggle next to Busy‑Appointment → stays in place; timer starts
-- [ ] Toggle back to Available → stays in place; timer clears
-- [ ] TV mode reflects changes within one poll cycle
-- [ ] Settings update title/theme and reflect in UI
-- [ ] Log in as a new user (Viewer): UI is read-only and POSTs return 403.
+- [x] Login (Google/Apple) works and session persists
+- [x] Add 3 barbers; verify initial order (1..N)
+- [x] Toggle top barber to Busy‑Walk‑In → moves to bottom
+- [x] Toggle next to Busy‑Appointment → stays in place; timer starts
+- [x] Toggle back to Available → stays in place; timer clears
+- [x] TV mode reflects changes within one poll cycle
+- [x] Settings update title/theme and reflect in UI
+- [x] Log in as a new user (Viewer): UI is read-only and POSTs return 403.
 
 # Barber Queue App — Build TODO (Containerized + Root Entry + Tests)
 
@@ -241,4 +241,4 @@ Header set X-Robots-Tag "noindex, nofollow"
 
 ### Make targets (optional)
 
-- [ ] `Makefile` with `up`, `down`, `logs`, `test`, `sh` (shell into container)
+- [x] `Makefile` with `up`, `down`, `logs`, `test`, `sh` (shell into container)
