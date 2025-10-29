@@ -18,6 +18,8 @@
   const alertEl = document.getElementById('tv-alert');
   const shopNameEl = document.getElementById('tv-shop-name');
   const updatedEl = document.getElementById('tv-last-updated');
+  const layoutToggle = document.getElementById('tv-layout-toggle');
+  const layoutStateEl = layoutToggle ? layoutToggle.querySelector('.tv-toggle__state') : null;
 
   if (!token) {
     showAlert('Missing TV token. Ask the owner to regenerate a valid link.');
@@ -29,6 +31,15 @@
   let lastServerTime = null;
   let lastSyncTimestamp = 0;
   let halted = false;
+  let isVertical = false;
+
+  setVerticalLayout(false);
+
+  if (layoutToggle) {
+    layoutToggle.addEventListener('click', () => {
+      setVerticalLayout(!isVertical);
+    });
+  }
 
   fetchQueue();
   startTimerLoop();
@@ -104,6 +115,19 @@
     }
   }
 
+  function setVerticalLayout(enable) {
+    isVertical = Boolean(enable);
+    if (listEl) {
+      listEl.classList.toggle('is-vertical', isVertical);
+    }
+    if (layoutToggle) {
+      layoutToggle.setAttribute('aria-pressed', isVertical ? 'true' : 'false');
+    }
+    if (layoutStateEl) {
+      layoutStateEl.textContent = isVertical ? 'On' : 'Off';
+    }
+  }
+
   function renderBarbers(barbers) {
     if (!listEl) {
       return;
@@ -122,19 +146,22 @@
       card.dataset.status = barber.status;
       card.dataset.busySince = barber.busy_since || '';
 
-      const header = document.createElement('div');
-      header.className = 'tv-card__header';
-
       const positionEl = document.createElement('p');
       positionEl.className = 'tv-position';
       positionEl.textContent = `#${barber.position}`;
+
+      const header = document.createElement('div');
+      header.className = 'tv-card__header';
 
       const nameEl = document.createElement('h3');
       nameEl.className = 'tv-name';
       nameEl.textContent = barber.name;
 
-      header.appendChild(positionEl);
       header.appendChild(nameEl);
+      header.appendChild(positionEl);
+
+      const footer = document.createElement('div');
+      footer.className = 'tv-card__footer';
 
       const statusEl = document.createElement('p');
       statusEl.className = 'tv-status';
@@ -144,9 +171,11 @@
       timerEl.className = 'tv-timer';
       timerEl.textContent = '--:--';
 
+      footer.appendChild(statusEl);
+      footer.appendChild(timerEl);
+
       card.appendChild(header);
-      card.appendChild(statusEl);
-      card.appendChild(timerEl);
+      card.appendChild(footer);
 
       card._timerEl = timerEl;
 

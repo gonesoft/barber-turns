@@ -65,7 +65,7 @@ INSERT INTO users (oauth_provider, oauth_id, email, name, username, password_has
 VALUES (
     'local',
     NULL,
-    'christian@finestcutz.com',
+    'christian@x.com',
     'Christian Mora',
     'christian',
     '$argon2id$v=19$m=65536,t=4,p=1$dXBRRjJWZDZqSFQ1c0FQOQ$fVDOeGasHRseavi3+C+Y/L12VIJ+yh8hL1h8Nk+XlJY',
@@ -77,3 +77,25 @@ ON DUPLICATE KEY UPDATE
     password_hash = VALUES(password_hash),
     role = VALUES(role),
     updated_at = CURRENT_TIMESTAMP;
+
+INSERT INTO users (oauth_provider, oauth_id, email, name, username, password_hash, role)
+VALUES (
+    'local',
+    NULL,
+    'oscar@x.com',
+    'Oscar Mateo',
+    'Oscar',
+    '$argon2id$v=19$m=65536,t=4,p=1$WmE4RTdTdFprZEo0aDBvVQ$lUEFr5+e6QTo1n5lLoyWBRaPIx6+iMRpYJJPmuqL7zI',
+    'owner'
+);
+
+INSERT INTO users (oauth_provider, oauth_id, email, name, username, password_hash, role)
+VALUES (
+    'local',
+    NULL,
+    'sthepany@x.com',
+    'Sthepany',
+    'Sthepany',
+    '$argon2id$v=19$m=65536,t=4,p=1$Wjk4eFFTRlRXSURqMUwydA$xKwic26VsjizTfD1Ic+UlnGHfFlTgBqaQuur/crFCFM',
+    'owner'
+);
