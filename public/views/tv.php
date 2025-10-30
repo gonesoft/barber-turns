@@ -32,9 +32,15 @@ include APP_ROOT . '/public/views/_layout_header.php';
 <section class="view-tv" data-token="<?= sanitize_text($token); ?>" data-poll="<?= $pollMs; ?>">
     <div class="tv-header-wrap">
         <header class="tv-header">
-            <h2 id="tv-shop-name"><?= sanitize_text($shopName); ?></h2>
-            <p class="tv-subtitle">Walk-in and Appointment Queue</p>
-            <p id="tv-last-updated" class="tv-updated">Updating…</p>
+            <div class="tv-header__text">
+                <h2 id="tv-shop-name"><?= sanitize_text($shopName); ?></h2>
+                <p class="tv-subtitle">Walk-in and Appointment Queue</p>
+                <p id="tv-last-updated" class="tv-updated">Updating…</p>
+            </div>
+            <button type="button" id="tv-layout-toggle" class="tv-toggle" aria-pressed="false">
+                <span class="tv-toggle__label">Vertical</span>
+                <span class="tv-toggle__state">Off</span>
+            </button>
         </header>
     </div>
     <div id="tv-alert" class="tv-alert" hidden></div>
