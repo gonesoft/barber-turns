@@ -52,7 +52,7 @@ function barber_find(int $id, ?PDO $pdo = null): ?array
  */
 function barber_create(string $name, string $actorRole, string $status = 'available', ?PDO $pdo = null): array
 {
-    barber_assert_owner($actorRole);
+    barber_assert_admin($actorRole);
     barber_assert_status($status);
 
     $pdo ??= bt_db();
@@ -81,8 +81,18 @@ function barber_create(string $name, string $actorRole, string $status = 'availa
  */
 function barber_update(int $id, array $fields, string $actorRole, ?PDO $pdo = null): array
 {
-    barber_assert_owner($actorRole);
+    barber_assert_admin($actorRole);
     $pdo ??= bt_db();
+
+    if (array_key_exists('status', $fields)) {
+        $status = (string)$fields['status'];
+        barber_assert_status($status);
+        if (!array_key_exists('busy_since', $fields)) {
+            $fields['busy_since'] = in_array($status, ['busy_walkin', 'busy_appointment'], true)
+                ? date('Y-m-d H:i:s')
+                : null;
+        }
+    }
 
     $allowed = ['name', 'status', 'position', 'busy_since'];
     $updates = [];
@@ -123,7 +133,7 @@ function barber_update(int $id, array $fields, string $actorRole, ?PDO $pdo = nu
  */
 function barber_delete(int $id, string $actorRole, ?PDO $pdo = null): void
 {
-    barber_assert_owner($actorRole);
+    barber_assert_admin($actorRole);
     $pdo ??= bt_db();
 
     $stmt = $pdo->prepare('DELETE FROM barbers WHERE id = :id');
@@ -236,11 +246,21 @@ function barber_assert_owner(string $role): void
 }
 
 /**
+ * Guard: ensure caller has admin-equivalent privileges.
+ */
+function barber_assert_admin(string $role): void
+{
+    if (!in_array($role, ['admin', 'owner'], true)) {
+        throw new RuntimeException('insufficient_role');
+    }
+}
+
+/**
  * Guard: ensure caller can manage queue (frontdesk or owner).
  */
 function barber_assert_manage_role(string $role): void
 {
-    if (!in_array($role, ['frontdesk', 'owner'], true)) {
+    if (!in_array($role, ['frontdesk', 'admin', 'owner'], true)) {
         throw new RuntimeException('insufficient_role');
     }
 }
