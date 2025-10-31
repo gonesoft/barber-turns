@@ -1,0 +1,61 @@
+name: Deploy to DreamHost (Changed Files Only)
+
+on:
+  push:
+    branches: [ main ]   # runs only after PRs merge to main
+  workflow_dispatch:     # allow manual run
+
+jobs:
+  deploy:
+    name: SFTP Sync
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2   # enough for diff
+
+      # OPTIONAL: quick syntax sanity (won't block deploy unless you want)
+      - name: PHP lint
+        run: |
+          find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 -I{} php -l {}
+
+      - name: Deploy changed files via SFTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          # Use 'sftp' protocol (secure). The action auto-tracks state, pushing only changed files.
+          server: ${{ secrets.SFTP_HOST }}
+          username: ${{ secrets.SFTP_USERNAME }}
+          password: ${{ secrets.SFTP_PASSWORD }}   # OR use 'privateKey' below
+          # privateKey: ${{ secrets.SFTP_PRIVATE_KEY }}
+          protocol: sftp
+          port: 22
+
+          local-dir: ./
+          server-dir: ${{ secrets.SFTP_SERVER_DIR }}
+
+          # Keep a deploy state file so only diffs upload next time
+          state-name: .ftp-deploy-sync-state.json
+
+          # Delete remote files that were deleted in git (safe incremental)
+          dangerous-clean-slate: false
+
+          # Exclusions — won't upload these
+          exclude: |
+            **/.git*
+            **/.github/**
+            **/node_modules/**
+            **/vendor/**
+            **/docker/**
+            **/tests/**
+            **/*.md
+            **/README*
+            **/*.yml
+            **/*.yaml
+            **/.env*
+            **/*.map
+            **/sql/**
+            **/.vscode/**
+            **/.idea/**
+            **/composer.*    # if DreamHost doesn't need composer artifacts
