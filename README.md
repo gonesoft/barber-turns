@@ -5,3 +5,5 @@ Barber Turns is a lightweight PHP 8.3 + MySQL app that keeps a barber shop's wal
 - **Core flow:** Barbers progress through `available → busy_walkin → busy_appointment → available`, keeping the queue balanced.
 - **Stack:** PHP 8.3 (DreamHost VPS), MySQL 8, minimalist front-end assets.
 - **Docs:** Full product requirements live in [`prd.md`](prd.md).
+
+[<img alt="Deployed with FTP Deploy Action" src="https://img.shields.io/badge/Deployed With-FTP DEPLOY ACTION-%3CCOLOR%3E?style=for-the-badge&color=0077b6">](https://github.com/SamKirkland/FTP-Deploy-Action)
