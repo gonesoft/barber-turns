@@ -25,6 +25,10 @@ switch ($route) {
         require_owner();
         $view = 'settings';
         break;
+    case '/users':
+        require_role('admin');
+        $view = 'users';
+        break;
     case '/tv':
         $view = 'tv';
         break;

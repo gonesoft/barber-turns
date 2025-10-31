@@ -15,5 +15,6 @@ $assetBase = $baseUrl !== '' ? $baseUrl : '';
 <script src="<?= sanitize_text($assetBase); ?>/assets/js/app.js" defer></script>
 <script src="<?= sanitize_text($assetBase); ?>/assets/js/tv.js" defer></script>
 <script src="<?= sanitize_text($assetBase); ?>/assets/js/auth.js" defer></script>
+<script src="<?= sanitize_text($assetBase); ?>/assets/js/users.js" defer></script>
 </body>
 </html>

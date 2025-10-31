@@ -67,7 +67,8 @@ function require_role(string $minRole): array
     $hierarchy = [
         'viewer' => 0,
         'frontdesk' => 1,
-        'owner' => 2,
+        'admin' => 2,
+        'owner' => 3,
     ];
 
     $user = require_login();

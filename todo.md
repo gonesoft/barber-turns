@@ -150,6 +150,14 @@ Header set X-Robots-Tag "noindex, nofollow"
 - [x] Add health check endpoint for uptime monitoring
 - [x] Collect feedback; plan v1.1 features (customer capture, analytics, multi-location)
 
+## Phase 14 — Admin User Management
+
+- [x] Introduce dedicated `admin` role between owner and front-desk in auth hierarchy.
+- [x] Build `/users` admin view with responsive layout, search, and create/update/delete form.
+- [x] Implement `/api/users.php` CRUD endpoints with role safeguards and payload validation.
+- [x] Update shared navigation to expose Users/Barbers links for admin+ roles while keeping Log Out universal.
+- [x] Ensure database schema, seeds, and docs reflect new admin-capable roles.
+
 ---
 
 ### Quick Smoke Test Checklist

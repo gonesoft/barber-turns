@@ -5,6 +5,46 @@
  */
 
 (function () {
+  const toggle = document.querySelector('.nav-toggle');
+  const nav = document.getElementById('site-nav-menu');
+
+  if (!toggle || !nav) {
+    return;
+  }
+
+  const closeOnOutsideClick = (event) => {
+    if (!nav.classList.contains('is-open')) {
+      return;
+    }
+    if (event.target === toggle || toggle.contains(event.target)) {
+      return;
+    }
+    if (nav.contains(event.target)) {
+      return;
+    }
+    setExpanded(false);
+  };
+
+  const setExpanded = (expanded) => {
+    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+    toggle.classList.toggle('is-open', expanded);
+    nav.classList.toggle('is-open', expanded);
+  };
+
+  toggle.addEventListener('click', () => {
+    const next = toggle.getAttribute('aria-expanded') !== 'true';
+    setExpanded(next);
+  });
+
+  document.addEventListener('click', closeOnOutsideClick);
+  window.addEventListener('resize', () => {
+    if (window.innerWidth >= 900) {
+      setExpanded(false);
+    }
+  });
+})();
+
+(function () {
   const queueSection = document.querySelector('.view-queue');
   if (!queueSection) {
     return;

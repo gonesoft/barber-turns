@@ -53,7 +53,8 @@ function api_require_role(string $role): array
     $hierarchy = [
         'viewer' => 0,
         'frontdesk' => 1,
-        'owner' => 2,
+        'admin' => 2,
+        'owner' => 3,
     ];
 
     $user = api_require_user();
