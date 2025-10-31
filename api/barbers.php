@@ -20,7 +20,7 @@ require_once INC_PATH . '/settings_model.php';
 header('Content-Type: application/json');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
 try {
     switch ($action) {
@@ -35,10 +35,28 @@ try {
             ensure_post($method);
             handle_order();
             break;
+        case 'get':
+            handle_get();
+            break;
+        case 'create':
+            ensure_post($method);
+            handle_create();
+            break;
+        case 'update':
+            ensure_post($method);
+            handle_update();
+            break;
+        case 'delete':
+            ensure_post($method);
+            handle_delete();
+            break;
         default:
             http_response_code(400);
             echo json_encode(['error' => 'invalid_action']);
     }
+} catch (InvalidArgumentException $e) {
+    http_response_code(400);
+    echo json_encode(['error' => 'bad_request', 'reason' => $e->getMessage()]);
 } catch (RuntimeException $e) {
     if ($e->getMessage() === 'insufficient_role') {
         http_response_code(403);
@@ -74,17 +92,18 @@ function handle_list(): void
     }
 
     $barbers = barber_list();
+    $search = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
 
-    $barbers = array_map(static function (array $barber): array {
-        $barber['position'] = (int)$barber['position'];
-        $barber['id'] = (int)$barber['id'];
-        if (isset($barber['busy_since']) && $barber['busy_since'] !== null) {
-            $dt = new DateTime($barber['busy_since'], new DateTimeZone(date_default_timezone_get()));
-            $barber['busy_since'] = $dt->format(DateTimeInterface::ATOM);
-        }
+    if ($token === '' && $search !== null && $search !== '') {
+        $term = function_exists('mb_strtolower') ? mb_strtolower($search) : strtolower($search);
+        $barbers = array_values(array_filter($barbers, static function (array $barber) use ($term): bool {
+            $name = function_exists('mb_strtolower') ? mb_strtolower($barber['name'] ?? '') : strtolower($barber['name'] ?? '');
 
-        return $barber;
-    }, $barbers);
+            return str_contains($name, $term);
+        }));
+    }
+
+    $barbers = array_map('normalize_barber_record', $barbers);
 
     echo json_encode([
         'data' => $barbers,
@@ -146,7 +165,7 @@ function handle_order(): void
  */
 function ensure_post(string $method): void
 {
-    if (strtoupper($method) !== 'POST') {
+    if ($method !== 'POST') {
         http_response_code(405);
         header('Allow: POST');
         echo json_encode(['error' => 'method_not_allowed']);
@@ -165,4 +184,121 @@ function read_json_payload(): array
     $decoded = json_decode($raw, true);
 
     return is_array($decoded) ? $decoded : [];
+}
+
+/**
+ * Fetch a single barber (admin/owner only).
+ */
+function handle_get(): void
+{
+    api_require_role('admin');
+    $barberId = sanitize_int($_GET['barber_id'] ?? null);
+
+    if ($barberId === null || $barberId <= 0) {
+        throw new InvalidArgumentException('invalid_barber_id');
+    }
+
+    $barber = barber_find($barberId);
+    if ($barber === null) {
+        http_response_code(404);
+        echo json_encode(['error' => 'not_found']);
+        return;
+    }
+
+    echo json_encode(['data' => normalize_barber_record($barber)]);
+}
+
+/**
+ * Create a barber (admin/owner only).
+ */
+function handle_create(): void
+{
+    $actor = api_require_role('admin');
+    $payload = read_json_payload();
+
+    $name = trim((string)($payload['name'] ?? ''));
+    if ($name === '') {
+        throw new InvalidArgumentException('name_required');
+    }
+
+    $status = isset($payload['status']) ? (string)$payload['status'] : 'available';
+
+    $barber = barber_create($name, $actor['role'], $status);
+
+    echo json_encode(['data' => normalize_barber_record($barber)]);
+}
+
+/**
+ * Update a barber (admin/owner only).
+ */
+function handle_update(): void
+{
+    $actor = api_require_role('admin');
+    $payload = read_json_payload();
+
+    $barberId = sanitize_int($payload['barber_id'] ?? null);
+    if ($barberId === null || $barberId <= 0) {
+        throw new InvalidArgumentException('invalid_barber_id');
+    }
+
+    $updates = [];
+
+    if (array_key_exists('name', $payload)) {
+        $name = trim((string)$payload['name']);
+        if ($name === '') {
+            throw new InvalidArgumentException('name_required');
+        }
+        $updates['name'] = $name;
+    }
+
+    if (array_key_exists('status', $payload)) {
+        $updates['status'] = (string)$payload['status'];
+    }
+
+    if (empty($updates)) {
+        throw new InvalidArgumentException('no_updates');
+    }
+
+    $updated = barber_update($barberId, $updates, $actor['role']);
+
+    echo json_encode(['data' => normalize_barber_record($updated)]);
+}
+
+/**
+ * Delete a barber (admin/owner only).
+ */
+function handle_delete(): void
+{
+    $actor = api_require_role('admin');
+    $payload = read_json_payload();
+
+    $barberId = sanitize_int($payload['barber_id'] ?? null);
+    if ($barberId === null || $barberId <= 0) {
+        throw new InvalidArgumentException('invalid_barber_id');
+    }
+
+    barber_delete($barberId, $actor['role']);
+
+    echo json_encode(['data' => ['deleted' => true]]);
+}
+
+/**
+ * Normalize a barber record for JSON responses.
+ *
+ * @param array<string,mixed> $barber
+ * @return array<string,mixed>
+ */
+function normalize_barber_record(array $barber): array
+{
+    $barber['id'] = (int)($barber['id'] ?? 0);
+    $barber['position'] = isset($barber['position']) ? (int)$barber['position'] : 0;
+
+    if (!empty($barber['busy_since'])) {
+        $dt = new DateTime((string)$barber['busy_since'], new DateTimeZone(date_default_timezone_get()));
+        $barber['busy_since'] = $dt->format(DateTimeInterface::ATOM);
+    } else {
+        $barber['busy_since'] = null;
+    }
+
+    return $barber;
 }
