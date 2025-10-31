@@ -132,6 +132,7 @@ $themeOptions = [
 $roleOptions = [
     'viewer' => 'Viewer',
     'frontdesk' => 'Front-Desk',
+    'admin' => 'Admin',
     'owner' => 'Owner',
 ];
 ?>

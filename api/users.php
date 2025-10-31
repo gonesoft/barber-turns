@@ -2,7 +2,7 @@
 /**
  * Barber Turns users API.
  *
- * Owner-only endpoints to list users and adjust roles.
+ * Admin/owner endpoints to perform user CRUD operations.
  */
 
 declare(strict_types=1);
@@ -15,21 +15,35 @@ require_once INC_PATH . '/security.php';
 header('Content-Type: application/json');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';
-$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+$method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
 
 try {
     switch ($action) {
         case 'list':
             handle_list();
             break;
-        case 'set_role':
+        case 'get':
+            handle_get();
+            break;
+        case 'create':
             ensure_post($method);
-            handle_set_role();
+            handle_create();
+            break;
+        case 'update':
+            ensure_post($method);
+            handle_update();
+            break;
+        case 'delete':
+            ensure_post($method);
+            handle_delete();
             break;
         default:
             http_response_code(400);
             echo json_encode(['error' => 'invalid_action']);
     }
+} catch (InvalidArgumentException $e) {
+    http_response_code(400);
+    echo json_encode(['error' => 'bad_request', 'reason' => $e->getMessage()]);
 } catch (RuntimeException $e) {
     if ($e->getMessage() === 'insufficient_role') {
         http_response_code(403);
@@ -44,37 +58,88 @@ try {
 }
 
 /**
- * List all users (owner only).
+ * List users (admin/owner only) with optional search.
  */
 function handle_list(): void
 {
-    $user = api_require_role('owner');
-    $users = users_list();
+    $user = api_require_role('admin');
+    $search = isset($_GET['q']) ? trim((string)$_GET['q']) : null;
+    $users = users_list(null, $search !== '' ? $search : null);
     echo json_encode(['data' => $users, 'user' => $user]);
 }
 
 /**
- * Update a user's role (owner only).
+ * Retrieve a single user by ID (admin/owner only).
  */
-function handle_set_role(): void
+function handle_get(): void
 {
-    $user = api_require_role('owner');
-    $payload = read_json_payload();
-
-    $userId = isset($payload['user_id']) ? (int)$payload['user_id'] : 0;
-    $role = $payload['role'] ?? '';
-
-    if ($userId <= 0 || !is_string($role)) {
-        throw new RuntimeException('invalid_payload');
+    api_require_role('admin');
+    $userId = sanitize_int($_GET['user_id'] ?? null);
+    if ($userId === null || $userId <= 0) {
+        throw new InvalidArgumentException('invalid_user_id');
     }
 
-    $updated = users_set_role($userId, $role, $user['role']);
+    $user = users_get($userId);
+    if ($user === null) {
+        http_response_code(404);
+        echo json_encode(['error' => 'not_found']);
+        return;
+    }
+
+    echo json_encode(['data' => $user]);
+}
+
+/**
+ * Create a new user (admin/owner only).
+ */
+function handle_create(): void
+{
+    $actor = api_require_role('admin');
+    $payload = read_json_payload();
+
+    $created = users_create($payload, $actor['role']);
+    echo json_encode(['data' => $created]);
+}
+
+/**
+ * Update an existing user (admin/owner only).
+ */
+function handle_update(): void
+{
+    $actor = api_require_role('admin');
+    $payload = read_json_payload();
+
+    $userId = sanitize_int($payload['user_id'] ?? null);
+    if ($userId === null || $userId <= 0) {
+        throw new InvalidArgumentException('invalid_user_id');
+    }
+
+    unset($payload['user_id']);
+
+    $updated = users_update($userId, $payload, $actor['role']);
     echo json_encode(['data' => $updated]);
+}
+
+/**
+ * Delete a user (admin/owner only).
+ */
+function handle_delete(): void
+{
+    $actor = api_require_role('admin');
+    $payload = read_json_payload();
+
+    $userId = sanitize_int($payload['user_id'] ?? null);
+    if ($userId === null || $userId <= 0) {
+        throw new InvalidArgumentException('invalid_user_id');
+    }
+
+    users_delete($userId, $actor['role']);
+    echo json_encode(['data' => ['deleted' => true]]);
 }
 
 function ensure_post(string $method): void
 {
-    if (strtoupper($method) !== 'POST') {
+    if ($method !== 'POST') {
         http_response_code(405);
         header('Allow: POST');
         echo json_encode(['error' => 'method_not_allowed']);

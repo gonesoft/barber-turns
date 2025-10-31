@@ -9,6 +9,10 @@ $title = isset($page_title) ? "Barber Turns — {$page_title}" : 'Finest Cutz Do
 $baseUrl = rtrim(bt_config()['base_url'] ?? '', '/');
 $assetBase = $baseUrl !== '' ? $baseUrl : '';
 $currentUser = current_user();
+$currentRoute = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$isNavUser = $currentUser !== null;
+$isAdminNav = $currentUser !== null && in_array($currentUser['role'] ?? '', ['admin', 'owner'], true);
+$navClass = 'site-nav' . ($isAdminNav ? '' : ' site-nav--static');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -21,10 +25,22 @@ $currentUser = current_user();
 </head>
 <body>
 <header class="site-header">
-    <h1 class="site-title">Finest Cutz Dominican Barber Shop</h1>
-    <?php if ($currentUser && ($currentUser['role'] ?? '') === 'owner'): ?>
-        <nav class="site-nav">
-            <a class="logout-link" href="<?= sanitize_text($baseUrl); ?>/logout">Logout</a>
+    <div class="site-branding">
+        <h1 class="site-title">Finest Cutz Dominican Barber Shop</h1>
+    </div>
+    <?php if ($isNavUser): ?>
+        <?php if ($isAdminNav): ?>
+            <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="site-nav-menu">
+                <span class="nav-toggle__label">Menu</span>
+                <span class="nav-toggle__icon" aria-hidden="true"></span>
+            </button>
+        <?php endif; ?>
+        <nav class="<?= sanitize_text($navClass); ?>" id="site-nav-menu" aria-label="Primary navigation">
+            <?php if ($isAdminNav): ?>
+                <a class="site-nav__link <?= $currentRoute === '/users' ? 'is-active' : ''; ?>" href="<?= sanitize_text($baseUrl); ?>/users">Users</a>
+                <a class="site-nav__link <?= in_array($currentRoute, ['/', '/queue'], true) ? 'is-active' : ''; ?>" href="<?= sanitize_text($baseUrl); ?>/queue">Barbers</a>
+            <?php endif; ?>
+            <a class="site-nav__link logout-link" href="<?= sanitize_text($baseUrl); ?>/logout">Log Out</a>
         </nav>
     <?php endif; ?>
 </header>

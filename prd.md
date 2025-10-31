@@ -1,6 +1,6 @@
 # Barber Queue Management App (PRD)
 
-**Version:** 1.4  
+**Version:** 1.5  
 **Environment:** DreamHost VPS (Apache + PHP 8.3 + MySQL)  
 **Deployment:** Root document directory (no `/public`)  
 **Platform:** Web (responsive for phone, desktop, TV)  
@@ -61,23 +61,32 @@ The app is built for:
 
 | Role | Permissions |
 |------|--------------|
-| **Owner/Admin** | Manage barbers, settings, regenerate TV token. |
+| **Owner** | Full control: manage users, barbers, settings, and TV token. |
+| **Admin** | Manage users and daily operations (barbers, settings) but cannot remove final owner. |
 | **Front-Desk** | Toggle statuses, reorder queue, access TV mode. |
+| **Viewer** | Read-only access to queue and TV mode. |
 
-### 3.5 Authentication
+### 3.5 Admin User Management
+- Dedicated **Users** page (admin/owner only) reachable from site navigation.
+- Responsive layout with search-as-needed list on the left and CRUD form on the right.
+- Supports create, read, update, delete for local users with role controls and password resets.
+- Enforces role safeguards (must keep ≥1 owner and ≥1 admin/owner).
+- Search matches name, email, or username; results update without leaving the page.
+
+### 3.6 Authentication
 - OAuth via **Google** and **Apple** for general users.  
 - Local username/password login for Owner/Admin bootstrap.  
 - Sessions persist until logout or browser close.  
 - **TV Mode:** read-only via `/tv?token=XYZ`, token validated from DB (independent of session).
 
-### 3.6 Logout & Cache Clear
+### 3.7 Logout & Cache Clear
 - Logout destroys PHP session and sends anti-cache headers.  
 - Redirects to `/logout_clear.html` which:
   - Clears localStorage, sessionStorage, and Cache API.  
   - Redirects to `/login?v=<timestamp>` (cache-busting).  
 - TV token unaffected (stored in DB, validated by URL).
 
-### 3.7 Display & Responsiveness
+### 3.8 Display & Responsiveness
 - Fully responsive (mobile, desktop, TV).  
 - **TV Mode:** full-screen auto-refresh (2–5s).  
 - Light/dark themes configurable.  
@@ -133,7 +142,13 @@ The app is built for:
 - Update shop title, logo, theme.  
 - Regenerate TV token.
 
-### 6.4 TV Mode
+### 6.4 Users
+- Admin/Owner only.  
+- Search users by name, email, or username.  
+- Inline form for create/update, including role selection and password reset.  
+- Delete protected by confirmation; enforces at least one admin/owner remains.
+
+### 6.5 TV Mode
 - Access `/tv?token=XYZ`  
 - Read-only vertical queue, large typography, color-coded statuses.
 
@@ -156,13 +171,15 @@ The app is built for:
 | Field | Type | Notes |
 |--------|------|-------|
 | id | INT PK |  |
-| oauth_provider | VARCHAR(20) | google/apple/local |
-| oauth_id | VARCHAR(100) | unique if OAuth |
-| username | VARCHAR(100) | for local login |
-| password_hash | VARCHAR(255) | Argon2id |
-| name | VARCHAR(100) |  |
-| role | ENUM('owner','frontdesk') |  |
-| created_at | TIMESTAMP |  |
+| oauth_provider | ENUM('google','apple','local') | Auth provider |
+| oauth_id | VARCHAR(255) | Unique per provider (nullable for local) |
+| email | VARCHAR(255) | Unique |
+| name | VARCHAR(255) | Display name |
+| username | VARCHAR(100) | Optional local login |
+| password_hash | VARCHAR(255) | Argon2id (local only) |
+| role | ENUM('viewer','frontdesk','admin','owner') | Authorization tier |
+| last_login_at | DATETIME | Tracks most recent login |
+| created_at / updated_at | TIMESTAMP | Audit fields |
 
 ### `barbers`
 | Field | Type | Notes |
@@ -195,6 +212,11 @@ The app is built for:
 | GET | `/api/settings.php?action=get` | Get settings. |
 | POST | `/api/settings.php?action=save` | Save settings. |
 | GET | `/tv?token=XYZ` | TV mode read-only. |
+| GET | `/api/users.php?action=list&[q]` | Admin list/search users. |
+| GET | `/api/users.php?action=get&user_id=ID` | Admin fetch single user. |
+| POST | `/api/users.php?action=create` | Admin create local user. |
+| POST | `/api/users.php?action=update` | Admin update user details/role. |
+| POST | `/api/users.php?action=delete` | Admin delete user (role safeguards). |
 
 ---
 
@@ -261,6 +283,7 @@ Polling pauses during drag or flip, resumes after completion.
 - Logout clears all cached data; TV remains active.  
 - Layout matches stable reference (front and flipped).  
 - Fully functional offline-resilient UI in production.
+- Admin navigation displays Users/Barbers menu options when role ≥ admin, and the Users page supports end-to-end CRUD with role safeguards.
 
 ---
 

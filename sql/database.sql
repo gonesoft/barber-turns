@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255) NOT NULL,
     username VARCHAR(100) DEFAULT NULL,
     password_hash VARCHAR(255) DEFAULT NULL,
-    role ENUM('viewer', 'frontdesk', 'owner') NOT NULL DEFAULT 'viewer',
+    role ENUM('viewer', 'frontdesk', 'admin', 'owner') NOT NULL DEFAULT 'viewer',
     last_login_at DATETIME DEFAULT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -86,7 +86,7 @@ VALUES (
     'Oscar Mateo',
     'Oscar',
     '$argon2id$v=19$m=65536,t=4,p=1$WmE4RTdTdFprZEo0aDBvVQ$lUEFr5+e6QTo1n5lLoyWBRaPIx6+iMRpYJJPmuqL7zI',
-    'owner'
+    'admin'
 );
 
 INSERT INTO users (oauth_provider, oauth_id, email, name, username, password_hash, role)
