@@ -1,61 +1,36 @@
-name: Deploy to DreamHost (Changed Files Only)
+name: Deploy to DreamHost (SFTP, changed files)
 
 on:
   push:
-    branches: [ main ]   # runs only after PRs merge to main
-  workflow_dispatch:     # allow manual run
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   deploy:
-    name: SFTP Sync
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2   # enough for diff
+          fetch-depth: 2
 
-      # OPTIONAL: quick syntax sanity (won't block deploy unless you want)
-      - name: PHP lint
-        run: |
-          find . -type f -name "*.php" -not -path "./vendor/*" -print0 | xargs -0 -n1 -I{} php -l {}
-
-      - name: Deploy changed files via SFTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: Deploy via SFTP (DreamHost - SSH key)
+        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
         with:
-          # Use 'sftp' protocol (secure). The action auto-tracks state, pushing only changed files.
           server: ${{ secrets.SFTP_HOST }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD }}   # OR use 'privateKey' below
-          # privateKey: ${{ secrets.SFTP_PRIVATE_KEY }}
-          protocol: ftps
           port: 22
-
-          local-dir: ./
-          server-dir: ${{ secrets.SFTP_SERVER_DIR }}
-
-          # Keep a deploy state file so only diffs upload next time
-          state-name: .ftp-deploy-sync-state.json
-
-          # Delete remote files that were deleted in git (safe incremental)
-          dangerous-clean-slate: false
-
-          # Exclusions — won't upload these
-          exclude: |
-            **/.git*
-            **/.github/**
-            **/node_modules/**
-            **/vendor/**
-            **/docker/**
-            **/tests/**
-            **/*.md
-            **/README*
-            **/*.yml
-            **/*.yaml
-            **/.env*
-            **/*.map
-            **/sql/**
-            **/.vscode/**
-            **/.idea/**
-            **/composer.*    # if DreamHost doesn't need composer artifacts
+          username: ${{ secrets.SFTP_USERNAME }}
+          password: ${{ secrets.SFTP_PASSWORD }}
+          local_path: './'
+          remote_path: ${{ secrets.SFTP_SERVER_DIR }}
+          # rsync-like exclusions
+          args: >
+            -avzr --delete
+            --exclude=".git*" --exclude=".github"
+            --exclude="docker" --exclude="tests"
+            --exclude="node_modules" --exclude="vendor"
+            --exclude="*.md" --exclude="*.yml" --exclude="*.yaml"
+            --exclude=".env*" --exclude="sql"
+            --exclude=".vscode" --exclude=".idea"
+            --exclude="*.map" --exclude="composer.*"
