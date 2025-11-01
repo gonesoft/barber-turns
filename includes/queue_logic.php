@@ -74,8 +74,6 @@ function queue_apply_transition(int $barberId, string $targetStatus, string $act
 
         if (in_array($targetStatus, ['busy_walkin', 'inactive'], true)) {
             barber_move_to_bottom($barberId, $pdo);
-        } elseif ($currentStatus === 'inactive' && $targetStatus !== 'inactive') {
-            barber_move_to_bottom($barberId, $pdo);
         }
 
         $stmt = $pdo->prepare(
