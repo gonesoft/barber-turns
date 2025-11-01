@@ -17,6 +17,9 @@ require_once INC_PATH . '/barber_model.php';
 require_once INC_PATH . '/queue_logic.php';
 require_once INC_PATH . '/settings_model.php';
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 header('Content-Type: application/json');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? 'list';

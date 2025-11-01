@@ -7,6 +7,10 @@ declare(strict_types=1);
 
 require_once APP_ROOT . '/includes/settings_model.php';
 
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
+
 $page_title = 'TV Display';
 $token = $_GET['token'] ?? '';
 $settings = $token !== '' ? settings_find_by_tv_token($token) : null;
