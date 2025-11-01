@@ -1,9 +1,9 @@
-name: Deploy to DreamHost (SFTP, changed files)
+name: Deploy to DreamHost (Rsync over SSH with password, changed files only)
 
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
+    branches: [ main ]        # deploy automatically after merge to main
+  workflow_dispatch:          # allow manual "Run workflow"
 
 jobs:
   deploy:
@@ -13,24 +13,50 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 2      # enough history for diffs
 
-      - name: Deploy via SFTP (DreamHost - SSH key)
-        uses: wlixcc/SFTP-Deploy-Action@v1.2.4
-        with:
-          server: ${{ secrets.SFTP_HOST }}
-          port: 22
-          username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASSWORD }}
-          local_path: './'
-          remote_path: ${{ secrets.SFTP_SERVER_DIR }}
-          # rsync-like exclusions
-          args: >
-            -avzr --delete
-            --exclude=".git*" --exclude=".github"
-            --exclude="docker" --exclude="tests"
-            --exclude="node_modules" --exclude="vendor"
-            --exclude="*.md" --exclude="*.yml" --exclude="*.yaml"
-            --exclude=".env*" --exclude="sql"
-            --exclude=".vscode" --exclude=".idea"
-            --exclude="*.map" --exclude="composer.*"
+      - name: Install sshpass
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sshpass
+
+      - name: Deploy changed files via rsync over SSH (password auth)
+        env:
+          SFTP_HOST: ${{ secrets.SFTP_HOST }}            
+          SFTP_USERNAME: ${{ secrets.SFTP_USERNAME }}    
+          SFTP_PASSWORD: ${{ secrets.SFTP_PASSWORD }}    
+          SFTP_SERVER_DIR: ${{ secrets.SFTP_SERVER_DIR }}
+        run: |
+          echo "Starting rsync deployment to $SFTP_HOST ..."
+          # Use sshpass to provide password to ssh/rsync non-interactively
+          sshpass -p "$SFTP_PASSWORD" rsync -az --delete \
+            --checksum \
+            --omit-dir-times \
+            --no-perms --no-owner --no-group \
+            --modify-window=2 \
+            --info=stats2,progress2 \
+            --exclude=".git*" \
+            --exclude=".github" \
+            --exclude="docker" \
+            --exclude="tests" \
+            --exclude="node_modules" \
+            --exclude="vendor" \
+            --exclude="*.md" \
+            --exclude="*.yml" \
+            --exclude="*.yaml" \
+            --exclude=".env*" \
+            --exclude="sql" \
+            --exclude=".vscode" \
+            --exclude=".idea" \
+            --exclude="*.map" \
+            --exclude="composer.*" \
+            -e "ssh -p 22 -o StrictHostKeyChecking=no" \
+            ./  "$SFTP_USERNAME@$SFTP_HOST:$SFTP_SERVER_DIR"
+
+          echo "✅ Rsync deployment completed."
+
+      - name: Show deployment summary
+        if: success()
+        run: |
+          echo "Deployment finished at $(date -u) UTC"
+          echo "Target: ${{ secrets.SFTP_USERNAME }}@${{ secrets.SFTP_HOST }}:${{ secrets.SFTP_SERVER_DIR }}"
