@@ -14,6 +14,15 @@ RewriteRule ^ - [L]
 RewriteRule ^ index.php [L]
 </IfModule>
 
+SetEnvIf Request_URI "^/api/" BT_NO_CACHE=1
+SetEnvIf Request_URI "^/tv" BT_NO_CACHE=1
+
+<IfModule mod_headers.c>
+    Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" env=BT_NO_CACHE
+    Header set Pragma "no-cache" env=BT_NO_CACHE
+    Header set Expires "0" env=BT_NO_CACHE
+</IfModule>
+
 <IfModule mod_expires.c>
 ExpiresActive On
 ExpiresByType text/css "access plus 1 week"
