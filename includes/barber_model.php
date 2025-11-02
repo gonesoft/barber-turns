@@ -264,3 +264,20 @@ function barber_assert_manage_role(string $role): void
         throw new RuntimeException('insufficient_role');
     }
 }
+
+/**
+ * Reset all barber statuses to available without changing positions.
+ */
+function barber_reset_all_statuses(string $actorRole, ?PDO $pdo = null): void
+{
+    barber_assert_admin($actorRole);
+
+    $pdo ??= bt_db();
+    $stmt = $pdo->prepare(
+        "UPDATE barbers
+         SET status = 'available',
+             busy_since = NULL,
+             updated_at = CURRENT_TIMESTAMP"
+    );
+    $stmt->execute();
+}

@@ -40,6 +40,7 @@ $navClass = 'site-nav' . ($isAdminNav ? '' : ' site-nav--static');
             <?php if ($isAdminNav): ?>
                 <a class="site-nav__link <?= $currentRoute === '/barbers' ? 'is-active' : ''; ?>" href="<?= sanitize_text($baseUrl); ?>/barbers">Barbers</a>
                 <a class="site-nav__link <?= $currentRoute === '/users' ? 'is-active' : ''; ?>" href="<?= sanitize_text($baseUrl); ?>/users">Users</a>
+                <button type="button" class="site-nav__link site-nav__button" id="reset-barbers-btn">Reset Barbers</button>
             <?php endif; ?>
             <a class="site-nav__link logout-link" href="<?= sanitize_text($baseUrl); ?>/logout">Log Out</a>
         </nav>
