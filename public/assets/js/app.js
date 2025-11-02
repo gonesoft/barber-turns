@@ -45,6 +45,47 @@
 })();
 
 (function () {
+  const button = document.getElementById('reset-barbers-btn');
+  if (!button) {
+    return;
+  }
+
+  const defaultLabel = button.textContent;
+
+  button.addEventListener('click', async () => {
+    if (!window.confirm('Reset all barbers to Available?')) {
+      return;
+    }
+
+    button.disabled = true;
+    button.classList.add('is-disabled');
+    button.textContent = 'Resetting…';
+
+    try {
+      const response = await fetch('/api/barbers.php?action=reset_all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({}),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Reset failed (${response.status})`);
+      }
+
+      window.alert('All barbers set to Available.');
+      window.location.reload();
+    } catch (error) {
+      console.error(error);
+      window.alert('Unable to reset barbers. Please try again.');
+      button.disabled = false;
+      button.classList.remove('is-disabled');
+      button.textContent = defaultLabel;
+    }
+  });
+})();
+
+(function () {
   const queueSection = document.querySelector('.view-queue');
   if (!queueSection) {
     return;

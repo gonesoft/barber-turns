@@ -53,6 +53,10 @@ try {
             ensure_post($method);
             handle_delete();
             break;
+        case 'reset_all':
+            ensure_post($method);
+            handle_reset_all();
+            break;
         default:
             http_response_code(400);
             echo json_encode(['error' => 'invalid_action']);
@@ -283,6 +287,16 @@ function handle_delete(): void
     barber_delete($barberId, $actor['role']);
 
     echo json_encode(['data' => ['deleted' => true]]);
+}
+
+/**
+ * Reset all barbers to available (admin/owner only).
+ */
+function handle_reset_all(): void
+{
+    $actor = api_require_role('admin');
+    barber_reset_all_statuses($actor['role']);
+    echo json_encode(['data' => ['reset' => true]]);
 }
 
 /**

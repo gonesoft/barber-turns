@@ -134,6 +134,23 @@ body.layout-tv .site-main {
     border-color: rgba(255, 255, 255, 0.45);
 }
 
+.site-nav__button {
+    background: transparent;
+    cursor: pointer;
+}
+
+.site-nav__button:hover,
+.site-nav__button:focus-visible {
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(255, 255, 255, 0.3);
+    outline: none;
+}
+
+.site-nav__button.is-disabled {
+    opacity: 0.6;
+    cursor: progress;
+}
+
 .logout-link {
     border-color: rgba(255, 255, 255, 0.45);
 }
